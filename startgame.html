@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="zh-CN">
   <head>
@@ -10634,14 +10635,21 @@ ${
                 },
               ];
 
-              // 保存到 extra.teresen_chat
+              // 保存到 extra.teresen_chat（参考分析2.js的方式，不更新0层消息的message字段）
               messageZero.extra.teresen_chat = chatHistory;
 
-              // 同时更新0层消息用于界面显示（可选，保持兼容性）
-              messageZero.message = openingStory;
-              messageZero.data = {};
-
-              await TavernHelper.setChatMessages([messageZero], { refresh: 'all' });
+              // 🔥 不更新0层消息的message字段，避免显示在聊天消息中
+              // 参考分析2.js的saveState函数：只保存到extra，不更新message
+              // 使用SillyTavern.saveChat()保存，而不是setChatMessages更新0层消息
+              if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+                await SillyTavern.saveChat();
+                console.log('✅ 已通过SillyTavern.saveChat()保存到extra.teresen_chat');
+              } else {
+                // 如果SillyTavern.saveChat不可用，使用setChatMessages但只更新extra，不更新message
+                // 注意：这里不设置message字段，只更新extra
+                await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
+                console.log('✅ 已通过setChatMessages保存到extra.teresen_chat（未更新message字段）');
+              }
 
               console.log('✅ 开场剧情生成完成并保存到 extra.teresen_chat');
               console.log('AI回复内容预览:', openingStory.substring(0, 200) + '...');
@@ -11485,3 +11493,4 @@ ${
     </script>
   </body>
 </html>
+
