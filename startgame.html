@@ -10612,19 +10612,39 @@ ${
                 throw new Error('AI未能生成开场剧情。');
               }
 
-              // 手动写入到第0层消息
+              // 保存到 extra.teresen_chat，而不是直接更新0层消息
               const messages = await getChatMessages(0);
               if (!messages || messages.length === 0) {
-                throw new Error('无法获取到第0层消息，无法写入开场剧情。');
+                throw new Error('无法获取到第0层消息，无法保存开场剧情。');
               }
               const messageZero = messages[0];
 
+              // 初始化 extra
+              if (!messageZero.extra) {
+                messageZero.extra = {};
+              }
+
+              // 创建聊天历史数组（开局选择后的第一条AI消息）
+              const chatHistory = [
+                {
+                  role: 'assistant',
+                  content: openingStory,
+                  id: 'opening_' + Date.now(),
+                  timestamp: Date.now(),
+                  variableState: null, // 变量会在后续更新
+                },
+              ];
+
+              // 保存到 extra.teresen_chat
+              messageZero.extra.teresen_chat = chatHistory;
+
+              // 同时更新0层消息用于界面显示（可选，保持兼容性）
               messageZero.message = openingStory;
               messageZero.data = {};
 
               await TavernHelper.setChatMessages([messageZero], { refresh: 'all' });
 
-              console.log('✅ 开场剧情生成完成并写入第0层消息');
+              console.log('✅ 开场剧情生成完成并保存到 extra.teresen_chat');
               console.log('AI回复内容预览:', openingStory.substring(0, 200) + '...');
 
               // 生成完成后停止音乐
@@ -11444,7 +11464,6 @@ ${
           '耶嘿嘿~今天也要和拖累那亲一起创造最棒的回忆！',
           '有时候我会想，如果这个世界上没有你，那该有多无聊啊~',
           '拖累那亲，你是我最特别的人，这一点永远都不会改变哦♡',
-          '测试',
         ];
 
         const quoteDisplay = document.getElementById('quote-display-init');
