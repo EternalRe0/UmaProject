@@ -2602,8 +2602,25 @@
               return; // 生成失败，不继续后续处理
             }
             
-            // 1. 更新界面内容（只有在确认生成成功后才更新）
-            await this.updateInterface();
+            // 🔥 关键修复：生成结束后，只更新其他界面元素，不更新正文内容
+            // 因为流式传输已经显示了正确的内容，updateStoryContent()会从extra.teresen_chat读取消息
+            // 可能读取到旧消息，导致显示回到第一条
+            // 所以这里只更新变量、状态等界面元素，保持流式传输显示的正文内容
+            console.log('🔄 更新界面元素（跳过正文内容更新，保持流式传输显示）');
+            
+            // 更新基础状态（变量、马娘、时间等），但不更新正文内容
+            this.updateTrainerStatus();
+            this.updateUmaStatus();
+            this.updateTimeDisplay();
+            this.updateReplyTimer();
+            this.updateLocationImage();
+            this.initSexPositionSection();
+            this.updateSexPositionImage();
+            this.updateTaskList();
+            this.updateInventory();
+            this.updateRules();
+            this.updateCurrencySystem();
+            this.updateFestivalNotice();
             
             // 3. 如果有变量更新，处理MVU更新
             if (finalText && finalText.trim()) {
