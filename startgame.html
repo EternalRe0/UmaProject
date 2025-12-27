@@ -10793,29 +10793,24 @@ ${
               // 延迟一下，确保数据已保存
               setTimeout(async () => {
                 try {
-                  // 🔥 验证数据已保存（检查最后一条消息，不是0层消息）
-                  // 因为我们保存的是 SillyTavern.chat[length - 1]，不是0层消息
+                  // 🔥 参考分析2.js的loadState：从后往前查找第一个有extra.teresen_chat的消息
                   let verifyHistory = [];
-
-                  // 方法1：检查最后一条消息（我们保存的位置）
                   if (typeof SillyTavern !== 'undefined' && SillyTavern.chat && SillyTavern.chat.length > 0) {
-                    const lastMsg = SillyTavern.chat[SillyTavern.chat.length - 1];
-                    verifyHistory = lastMsg?.extra?.teresen_chat || [];
-                    console.log('🔍 验证最后一条消息的extra.teresen_chat:', {
-                      hasExtra: !!lastMsg?.extra,
-                      hasTeresenChat: !!lastMsg?.extra?.teresen_chat,
-                      chatHistoryLength: verifyHistory.length,
-                    });
+                    for (let i = SillyTavern.chat.length - 1; i >= 0; i--) {
+                      const msg = SillyTavern.chat[i];
+                      if (msg.extra?.teresen_chat && Array.isArray(msg.extra.teresen_chat)) {
+                        verifyHistory = msg.extra.teresen_chat;
+                        console.log(`🔍 找到extra.teresen_chat，位置：第${i}条消息（从后往前）`);
+                        break;
+                      }
+                    }
                   }
 
-                  // 方法2：如果最后一条消息没有，检查0层消息（备用）
-                  if (verifyHistory.length === 0) {
-                    const verifyMessages = await getChatMessages(0);
-                    verifyHistory = verifyMessages?.[0]?.extra?.teresen_chat || [];
-                    console.log('🔍 验证0层消息的extra.teresen_chat（备用）:', {
-                      chatHistoryLength: verifyHistory.length,
-                    });
-                  }
+                  console.log('🔍 验证结果:', {
+                    chatHistoryLength: verifyHistory.length,
+                    firstMessageRole: verifyHistory[0]?.role,
+                    hasVariableState: !!verifyHistory[0]?.variableState,
+                  });
 
                   if (verifyHistory.length > 0) {
                     console.log(`✅ 验证成功：extra.teresen_chat已有 ${verifyHistory.length} 条消息`);
@@ -11741,5 +11736,4 @@ ${
     </script>
   </body>
 </html>
-
 
