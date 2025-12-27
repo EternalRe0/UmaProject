@@ -1,3 +1,4 @@
+
 <!--
 ================================================================================
   特雷森规则怪谈 - 训练员生存指南
@@ -2751,13 +2752,20 @@
               messageZero.extra = {};
             }
             
-            // 保存到 extra.teresen_chat
+            // 保存到 extra.teresen_chat（参考分析2.js的方式，不更新0层消息的message字段）
             messageZero.extra.teresen_chat = JSON.parse(JSON.stringify(chatHistory)); // 深拷贝
             
-            // 更新消息（不刷新界面）
-            await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
-            
-            console.log(`✅ 已保存 ${chatHistory.length} 条消息到 extra.teresen_chat`);
+            // 🔥 使用SillyTavern.saveChat()保存，而不是setChatMessages更新0层消息
+            // 参考分析2.js的saveState函数：只保存到extra，不更新message
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+              await SillyTavern.saveChat();
+              console.log(`✅ 已通过SillyTavern.saveChat()保存 ${chatHistory.length} 条消息到 extra.teresen_chat`);
+            } else {
+              // 如果SillyTavern.saveChat不可用，使用setChatMessages但只更新extra，不更新message
+              // 注意：这里不设置message字段，只更新extra
+              await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
+              console.log(`✅ 已通过setChatMessages保存 ${chatHistory.length} 条消息到 extra.teresen_chat（未更新message字段）`);
+            }
           } catch (error) {
             console.error('❌ 保存聊天历史失败:', error);
           }
@@ -4022,11 +4030,12 @@
 
                   n = this.getAllVariables();
 
-                ((t.data = n),
-
-                  await TavernHelper.setChatMessages([t], { refresh: 'none' }),
-
-                  console.log('✅ MVU状态已同步到0层消息'));
+                // 🔥 只更新data字段，不更新message字段（参考分析2.js的方式）
+                // 变量状态已保存到extra.teresen_chat中对应消息的variableState
+                // 这里只更新data用于变量系统，不更新message避免显示在聊天消息中
+                t.data = n;
+                await TavernHelper.setChatMessages([t], { refresh: 'none' });
+                console.log('✅ MVU状态已同步到0层消息的data字段（未更新message字段）');
 
               }
 
@@ -7252,28 +7261,10 @@
 
 
 
-                // 8. 静默保存到第0层，实现同层游玩
-                if (mvuSucceeded && this.currentMvuState) {
-                    try {
-                        let messages = await getChatMessages('0');
-                        if (messages && messages.length > 0) {
-                            const messageZero = messages[0];
-                            
-                            // 更新第0层消息，支持同层游玩
-                            messageZero.message = aiResponse;
-                            messageZero.data = this.currentMvuState;
-                            
-                            if ('undefined' != typeof TavernHelper && TavernHelper.setChatMessages) {
-                                await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
-                                console.log('✅ 已静默更新第0层消息，支持同层游玩');
-                            }
-                        } else {
-                            console.warn('⚠️ 未找到第0层消息，无法更新');
-                        }
-                    } catch (e) {
-                        console.warn('⚠️ 更新第0层消息失败:', e);
-                    }
-                }
+                // 8. 🔥 不再更新0层消息的message字段（参考分析2.js的方式）
+                // 数据已保存到extra.teresen_chat，不需要更新0层消息
+                // 如果需要在同层游玩，应该从extra.teresen_chat读取，而不是从0层消息读取
+                console.log('📝 数据已保存到extra.teresen_chat，不更新0层消息（完全脱离0层方案）');
 
                 // 9. 指令队列已在发送消息时清除（无需重复清除）
 
@@ -8953,12 +8944,47 @@
               const chatMessages = await getChatMessages(0);
 
               if (chatMessages && chatMessages.length > 0) {
-
-                chatMessages[0].message = save.data.message;
-
-                await TavernHelper.setChatMessages([chatMessages[0]], { refresh: 'none' });
-
-                console.log('✅ 聊天历史已恢复');
+                // 🔥 读档时恢复消息到extra.teresen_chat，而不是0层消息的message字段
+                // 参考分析2.js的方式，只保存到extra，不更新message
+                if (save.data.chat_history && Array.isArray(save.data.chat_history)) {
+                  // 如果有完整的聊天历史，恢复到extra.teresen_chat
+                  const messageZero = chatMessages[0];
+                  if (!messageZero.extra) {
+                    messageZero.extra = {};
+                  }
+                  messageZero.extra.teresen_chat = JSON.parse(JSON.stringify(save.data.chat_history));
+                  
+                  if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+                    await SillyTavern.saveChat();
+                    console.log('✅ 聊天历史已恢复到extra.teresen_chat');
+                  } else {
+                    await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
+                    console.log('✅ 聊天历史已恢复到extra.teresen_chat（未更新message字段）');
+                  }
+                } else if (save.data.message) {
+                  // 如果只有单条消息，创建聊天历史数组
+                  const messageZero = chatMessages[0];
+                  if (!messageZero.extra) {
+                    messageZero.extra = {};
+                  }
+                  messageZero.extra.teresen_chat = [
+                    {
+                      role: 'assistant',
+                      content: save.data.message,
+                      id: 'load_' + Date.now(),
+                      timestamp: Date.now(),
+                      variableState: save.data.variables || null
+                    }
+                  ];
+                  
+                  if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+                    await SillyTavern.saveChat();
+                    console.log('✅ 单条消息已恢复到extra.teresen_chat');
+                  } else {
+                    await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
+                    console.log('✅ 单条消息已恢复到extra.teresen_chat（未更新message字段）');
+                  }
+                }
 
               }
 
@@ -10614,11 +10640,40 @@
                 try {
                   const chatMessages = await getChatMessages('0');
                   if (chatMessages && chatMessages.length > 0) {
-                    chatMessages[0].message = lastSnapshot.message;
-                    if (lastSnapshot.data) {
-                      chatMessages[0].data = lastSnapshot.data;
+                    // 🔥 恢复消息到extra.teresen_chat，而不是0层消息的message字段
+                    const messageZero = chatMessages[0];
+                    if (!messageZero.extra) {
+                      messageZero.extra = {};
                     }
-                    await TavernHelper.setChatMessages([chatMessages[0]], { refresh: 'full' });
+                    // 如果有timeline_history，转换为teresen_chat格式
+                    if (save.timeline_history && save.timeline_history.length > 0) {
+                      messageZero.extra.teresen_chat = save.timeline_history.map(snapshot => ({
+                        role: 'assistant',
+                        content: snapshot.message || '',
+                        id: snapshot.message_id || `snapshot_${Date.now()}`,
+                        timestamp: snapshot.timestamp || Date.now(),
+                        variableState: snapshot.data || null
+                      }));
+                    } else if (lastSnapshot) {
+                      messageZero.extra.teresen_chat = [{
+                        role: 'assistant',
+                        content: lastSnapshot.message || '',
+                        id: 'load_' + Date.now(),
+                        timestamp: Date.now(),
+                        variableState: lastSnapshot.data || null
+                      }];
+                    }
+                    
+                    // 只更新data字段，不更新message字段
+                    if (lastSnapshot && lastSnapshot.data) {
+                      messageZero.data = lastSnapshot.data;
+                    }
+                    
+                    if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+                      await SillyTavern.saveChat();
+                    } else {
+                      await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
+                    }
                     // 🔥 强制更新文本内容
                     if (typeof this.updateInterface === 'function') {
                       await this.updateInterface();
@@ -10666,12 +10721,26 @@
                 const chatMessages = await getChatMessages(0);
 
                 if (chatMessages && chatMessages.length > 0) {
-
-                  chatMessages[0].message = save.message_content;
-
-                  await TavernHelper.setChatMessages([chatMessages[0]], { refresh: 'full' });
-
-                  console.log('✅ 单条消息已恢复（旧版格式）');
+                  // 🔥 恢复消息到extra.teresen_chat，而不是0层消息的message字段
+                  const messageZero = chatMessages[0];
+                  if (!messageZero.extra) {
+                    messageZero.extra = {};
+                  }
+                  messageZero.extra.teresen_chat = [{
+                    role: 'assistant',
+                    content: save.message_content || '',
+                    id: 'load_' + Date.now(),
+                    timestamp: Date.now(),
+                    variableState: null
+                  }];
+                  
+                  if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+                    await SillyTavern.saveChat();
+                    console.log('✅ 单条消息已恢复到extra.teresen_chat（旧版格式）');
+                  } else {
+                    await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
+                    console.log('✅ 单条消息已恢复到extra.teresen_chat（未更新message字段）');
+                  }
 
                   // 🔥 强制更新文本内容
                   if (typeof this.updateInterface === 'function') {
@@ -11612,12 +11681,33 @@
                 try {
                   const chatMessages = await getChatMessages('0');
                   if (chatMessages && chatMessages.length > 0) {
-                    chatMessages[0].message = lastSnapshot.message;
-                    if (lastSnapshot.data) {
-                      chatMessages[0].data = lastSnapshot.data;
+                    // 🔥 恢复消息到extra.teresen_chat，而不是0层消息的message字段
+                    const messageZero = chatMessages[0];
+                    if (!messageZero.extra) {
+                      messageZero.extra = {};
                     }
-                    await TavernHelper.setChatMessages([chatMessages[0]], { refresh: 'none' });
-                    console.log('✅ 聊天消息已恢复到界面');
+                    if (lastSnapshot && lastSnapshot.message) {
+                      messageZero.extra.teresen_chat = [{
+                        role: 'assistant',
+                        content: lastSnapshot.message,
+                        id: 'load_' + Date.now(),
+                        timestamp: Date.now(),
+                        variableState: lastSnapshot.data || null
+                      }];
+                    }
+                    
+                    // 只更新data字段，不更新message字段
+                    if (lastSnapshot && lastSnapshot.data) {
+                      messageZero.data = lastSnapshot.data;
+                    }
+                    
+                    if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+                      await SillyTavern.saveChat();
+                      console.log('✅ 聊天消息已恢复到extra.teresen_chat');
+                    } else {
+                      await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
+                      console.log('✅ 聊天消息已恢复到extra.teresen_chat（未更新message字段）');
+                    }
                   }
                 } catch (e) {
                   console.warn('恢复聊天消息失败:', e);
@@ -11634,12 +11724,31 @@
               ) {
                 const chatMessages = await getChatMessages(0);
                 if (chatMessages && chatMessages.length > 0) {
-                  chatMessages[0].message = saveData.message_content;
-                  if (saveData.mvu_data) {
-                    chatMessages[0].data = saveData.mvu_data;
+                  // 🔥 恢复消息到extra.teresen_chat，而不是0层消息的message字段
+                  const messageZero = chatMessages[0];
+                  if (!messageZero.extra) {
+                    messageZero.extra = {};
                   }
-                  await TavernHelper.setChatMessages([chatMessages[0]], { refresh: 'none' });
-                  console.log('✅ 单条消息已恢复（旧版格式）');
+                  messageZero.extra.teresen_chat = [{
+                    role: 'assistant',
+                    content: saveData.message_content || '',
+                    id: 'load_' + Date.now(),
+                    timestamp: Date.now(),
+                    variableState: saveData.mvu_data || null
+                  }];
+                  
+                  // 只更新data字段，不更新message字段
+                  if (saveData.mvu_data) {
+                    messageZero.data = saveData.mvu_data;
+                  }
+                  
+                  if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+                    await SillyTavern.saveChat();
+                    console.log('✅ 单条消息已恢复到extra.teresen_chat（旧版格式）');
+                  } else {
+                    await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
+                    console.log('✅ 单条消息已恢复到extra.teresen_chat（未更新message字段）');
+                  }
                 }
               }
             }
@@ -15736,13 +15845,28 @@
 
               const firstMessage = chatMessages[0];
 
-              firstMessage.message = saveData.message_content;
-
+              // 🔥 恢复消息到extra.teresen_chat，而不是0层消息的message字段
+              if (!firstMessage.extra) {
+                firstMessage.extra = {};
+              }
+              firstMessage.extra.teresen_chat = [{
+                role: 'assistant',
+                content: saveData.message_content || '',
+                id: 'load_' + Date.now(),
+                timestamp: Date.now(),
+                variableState: saveData.mvu_data || null
+              }];
+              
+              // 只更新data字段，不更新message字段
               firstMessage.data = saveData.mvu_data;
-
-              await TavernHelper.setChatMessages([firstMessage], { refresh: 'none' });
-
-              console.log('✅ 单条消息已恢复（旧版格式）');
+              
+              if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+                await SillyTavern.saveChat();
+                console.log('✅ 单条消息已恢复到extra.teresen_chat（旧版格式）');
+              } else {
+                await TavernHelper.setChatMessages([firstMessage], { refresh: 'none' });
+                console.log('✅ 单条消息已恢复到extra.teresen_chat（未更新message字段）');
+              }
 
             }
 
@@ -16199,12 +16323,42 @@
             if (previousSave.message_content !== undefined) {
               const chatMessages = await getChatMessages('0');
               if (chatMessages && chatMessages.length > 0) {
-                chatMessages[0].message = previousSave.message_content;
-                if (previousSave.snapshot_data && previousSave.snapshot_data.mvu_data) {
-                  chatMessages[0].data = previousSave.snapshot_data.mvu_data;
+                // 🔥 恢复消息到extra.teresen_chat，而不是0层消息的message字段
+                const messageZero = chatMessages[0];
+                if (!messageZero.extra) {
+                  messageZero.extra = {};
                 }
-                await TavernHelper.setChatMessages([chatMessages[0]], { refresh: 'full' });
-                console.log('✅ 已恢复聊天消息到用户发送消息之前的状态');
+                // 如果有timeline_history，恢复完整历史
+                if (previousSave.timeline_history && Array.isArray(previousSave.timeline_history)) {
+                  messageZero.extra.teresen_chat = previousSave.timeline_history.map(snapshot => ({
+                    role: 'assistant',
+                    content: snapshot.message || '',
+                    id: snapshot.message_id || `snapshot_${Date.now()}`,
+                    timestamp: snapshot.timestamp || Date.now(),
+                    variableState: snapshot.data || null
+                  }));
+                } else if (previousSave.message_content) {
+                  messageZero.extra.teresen_chat = [{
+                    role: 'assistant',
+                    content: previousSave.message_content,
+                    id: 'load_' + Date.now(),
+                    timestamp: Date.now(),
+                    variableState: previousSave.snapshot_data?.mvu_data || null
+                  }];
+                }
+                
+                // 只更新data字段，不更新message字段
+                if (previousSave.snapshot_data && previousSave.snapshot_data.mvu_data) {
+                  messageZero.data = previousSave.snapshot_data.mvu_data;
+                }
+                
+                if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+                  await SillyTavern.saveChat();
+                  console.log('✅ 已恢复聊天消息到extra.teresen_chat（用户发送消息之前的状态）');
+                } else {
+                  await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
+                  console.log('✅ 已恢复聊天消息到extra.teresen_chat（未更新message字段）');
+                }
               }
             }
             
@@ -16321,11 +16475,31 @@
                   // 兼容旧格式：只恢复单条消息
                   const chatMessages = await getChatMessages('0');
                   if (chatMessages && chatMessages.length > 0) {
-                    chatMessages[0].message = previousSave.snapshot_data.message_content;
-                    if (previousSave.snapshot_data.mvu_data) {
-                      chatMessages[0].data = previousSave.snapshot_data.mvu_data;
+                    // 🔥 恢复消息到extra.teresen_chat，而不是0层消息的message字段
+                    const messageZero = chatMessages[0];
+                    if (!messageZero.extra) {
+                      messageZero.extra = {};
                     }
-                    await TavernHelper.setChatMessages([chatMessages[0]], { refresh: 'full' });
+                    if (previousSave.snapshot_data && previousSave.snapshot_data.message_content) {
+                      messageZero.extra.teresen_chat = [{
+                        role: 'assistant',
+                        content: previousSave.snapshot_data.message_content,
+                        id: 'load_' + Date.now(),
+                        timestamp: Date.now(),
+                        variableState: previousSave.snapshot_data.mvu_data || null
+                      }];
+                    }
+                    
+                    // 只更新data字段，不更新message字段
+                    if (previousSave.snapshot_data && previousSave.snapshot_data.mvu_data) {
+                      messageZero.data = previousSave.snapshot_data.mvu_data;
+                    }
+                    
+                    if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+                      await SillyTavern.saveChat();
+                    } else {
+                      await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
+                    }
                   }
                 }
                 
