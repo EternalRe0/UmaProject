@@ -2439,8 +2439,9 @@
         /**
          * 保存消息历史到 extra.teresen_chat
          * @param {Array} chatHistory - 消息历史数组
+         * @param {Object|null} updatedVariables - 更新后的变量状态（可选，参考分析2.js的saveState第二个参数）
          */
-        async saveChatHistoryToExtra(chatHistory) {
+        async saveChatHistoryToExtra(chatHistory, updatedVariables = null) {
           try {
             // 🔥 参考分析2.js的saveState：保存到最后一条消息，而不是0层消息
             // 分析2.js使用 SillyTavern.chat[a.length - 1]，而不是getChatMessages(0)
@@ -2472,6 +2473,30 @@
                 `✅ 已通过setChatMessages保存 ${chatHistory.length} 条消息到最后一条消息的 extra.teresen_chat（未更新message字段）`,
               );
             }
+
+            // 🔥 参考分析2.js的saveState：如果有变量，调用commitUpdates提交变量更新
+            // 分析2.js: if (e) { const t = () => JSON.parse(JSON.stringify(e)); await this.core.commitUpdates([t]); }
+            if (updatedVariables) {
+              try {
+                // 尝试调用commitUpdates（如果存在）
+                if (
+                  typeof window.PwAic !== 'undefined' &&
+                  window.PwAic.core &&
+                  typeof window.PwAic.core.commitUpdates === 'function'
+                ) {
+                  const variableGetter = () => JSON.parse(JSON.stringify(updatedVariables));
+                  await window.PwAic.core.commitUpdates([variableGetter]);
+                  console.log('✅ 已通过commitUpdates提交变量更新');
+                } else {
+                  // 如果没有commitUpdates，尝试使用eventEmit直接更新变量
+                  // 这是备用方案，可能不如commitUpdates准确
+                  console.warn('⚠️ commitUpdates不可用，尝试使用备用方案更新变量');
+                }
+              } catch (commitError) {
+                console.error('❌ 提交变量更新失败:', commitError);
+                // 不影响消息保存，继续执行
+              }
+            }
           } catch (error) {
             console.error('❌ 保存聊天历史失败:', error);
           }
@@ -2500,8 +2525,9 @@
             // 3. 添加到历史
             chatHistory.push(newMessage);
 
-            // 4. 保存
-            await this.saveChatHistoryToExtra(chatHistory);
+            // 4. 🔥 保存（参考分析2.js：如果变量不为null，传入第二个参数）
+            const variablesToSave = variableState || null;
+            await this.saveChatHistoryToExtra(chatHistory, variablesToSave);
 
             console.log(`✅ 已添加${role}消息到extra.teresen_chat`);
             return newMessage;
@@ -2524,6 +2550,46 @@
             console.error('❌ 获取最新消息失败:', error);
             return null;
           }
+        }
+
+        /**
+         * 🔥 处理变量（参考分析2.js的_processVariables函数）
+         * @param {string} content - AI回复内容
+         * @param {Object} currentVariables - 当前变量状态
+         * @returns {Object} { updatedVariables, snapshot }
+         */
+        async _processVariables(content, currentVariables) {
+          const inputData = { old_variables: currentVariables };
+          try {
+            if ('function' == typeof window.eventEmit) {
+              await window.eventEmit('mag_invoke_mvu', content, inputData);
+              if (inputData.new_variables) {
+                const updatedVariables = inputData.new_variables;
+                return {
+                  updatedVariables: updatedVariables,
+                  snapshot: JSON.parse(JSON.stringify(updatedVariables)),
+                };
+              }
+            }
+          } catch (error) {
+            console.error('❌ 处理变量失败:', error);
+          }
+          // 如果没有更新，返回原始变量
+          return {
+            updatedVariables: currentVariables,
+            snapshot: JSON.parse(JSON.stringify(currentVariables)),
+          };
+        }
+
+        /**
+         * 🔥 同步状态与历史（参考分析2.js的_syncStateWithHistory函数）
+         * 从历史记录的最后一条消息的variableState获取变量状态，然后保存
+         * @param {Array} chatHistory - 聊天历史数组
+         */
+        async _syncStateWithHistory(chatHistory) {
+          // 从最后一条消息的variableState获取变量状态
+          const variables = (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].variableState) || {};
+          await this.saveChatHistoryToExtra(chatHistory, variables);
         }
 
         // 🔥 获取当前周目的基础键名
@@ -6657,35 +6723,55 @@
                   let chatHistory = await this.loadChatHistoryFromExtra();
                   console.log(`📋 [handleActionSubmit] 加载现有历史: ${chatHistory.length} 条消息`);
 
-                  // 6.2 创建用户消息对象并添加到内存数组
+                  // 6.2 🔥 获取当前变量状态（参考分析2.js的handleSend）
+                  // 分析2.js使用: getVariables({ type: "message" })
+                  let currentVariables = {};
+                  try {
+                    if (typeof getVariables === 'function') {
+                      currentVariables = JSON.parse(JSON.stringify(getVariables({ type: 'message' }) || {}));
+                    } else {
+                      // 备用方案：从历史记录的最后一条消息的variableState获取
+                      const lastMsg = chatHistory.length > 0 ? chatHistory[chatHistory.length - 1] : null;
+                      currentVariables = lastMsg?.variableState || this.currentMvuState || this.getAllVariables() || {};
+                    }
+                  } catch (error) {
+                    console.warn('⚠️ 获取变量状态失败，使用备用方案:', error);
+                    currentVariables = this.currentMvuState || this.getAllVariables() || {};
+                  }
+
+                  // 6.3 🔥 处理变量（参考分析2.js的_processVariables）
+                  const variableResult = await this._processVariables(aiResponse, currentVariables);
+                  const updatedVariables = variableResult.updatedVariables;
+                  const variableSnapshot = variableResult.snapshot;
+
+                  // 6.4 创建用户消息对象并添加到内存数组
                   const userMessageObj = {
                     role: 'user',
                     content: userMessage,
                     id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                     timestamp: Date.now(),
-                    variableState: null,
+                    variableState: JSON.parse(JSON.stringify(currentVariables)), // 用户消息保存发送前的变量状态
                   };
                   chatHistory.push(userMessageObj);
                   console.log(`📋 [handleActionSubmit] 添加用户消息后，历史长度: ${chatHistory.length}`);
 
-                  // 6.3 获取更新后的变量状态
-                  const currentVariables = this.currentMvuState || this.getAllVariables();
-
-                  // 6.4 创建AI消息对象并添加到内存数组（此时chatHistory还包含用户消息）
+                  // 6.5 创建AI消息对象并添加到内存数组（此时chatHistory还包含用户消息）
+                  // 🔥 参考分析2.js：AI消息的variableState保存处理后的变量快照
                   const assistantMessageObj = {
                     role: 'assistant',
                     content: aiResponse,
                     id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                     timestamp: Date.now(),
-                    variableState: currentVariables ? JSON.parse(JSON.stringify(currentVariables)) : null,
+                    variableState: variableSnapshot, // 保存处理后的变量快照
                   };
                   chatHistory.push(assistantMessageObj);
                   console.log(`📋 [handleActionSubmit] 添加AI消息后，历史长度: ${chatHistory.length}`);
 
-                  // 6.5 一次性保存完整历史数组（包含用户消息+AI回复）
-                  await this.saveChatHistoryToExtra(chatHistory);
+                  // 6.6 一次性保存完整历史数组（包含用户消息+AI回复）
+                  // 🔥 参考分析2.js的saveState：第二个参数传入更新后的变量
+                  await this.saveChatHistoryToExtra(chatHistory, updatedVariables);
 
-                  // 6.6 验证保存结果
+                  // 6.7 验证保存结果
                   const verifyHistory = await this.loadChatHistoryFromExtra();
                   console.log(`📋 [handleActionSubmit] 保存后验证，历史长度: ${verifyHistory.length} 条消息`);
                   if (verifyHistory.length !== chatHistory.length) {
@@ -6696,86 +6782,28 @@
                     console.log('✅ 用户输入和AI回复已保存到 extra.teresen_chat');
                   }
 
-                  // 6.7 可选：更新0层消息用于界面显示（仅用于兼容性，不作为数据源）
+                  // 6.8 可选：更新0层消息用于界面显示（仅用于兼容性，不作为数据源）
                   // 注意：根据"脱离0层消息方案"，0层消息只作为容器，数据主要存储在extra.teresen_chat
                   // 如果界面需要显示，可以更新0层，但读取时应该优先从extra读取
                   // 这里选择不更新0层消息，完全依赖extra.teresen_chat
                   console.log('📝 消息已保存到extra.teresen_chat，不更新0层消息（完全脱离0层方案）');
+
+                  // 6.9 🔥 更新变量状态和界面（变量已在_processVariables中处理）
+                  // 参考分析2.js：变量处理已经在_processVariables中完成，这里只需要更新本地状态和UI
+                  if (updatedVariables) {
+                    this.currentMvuState = updatedVariables;
+                    // 重新渲染UI（如果有stat_data）
+                    if (updatedVariables.stat_data) {
+                      this.renderUI(updatedVariables.stat_data);
+                    }
+                    console.log('✅ 变量状态已更新并保存到extra.teresen_chat');
+                  }
                 } catch (saveError) {
                   console.error('❌ 保存到extra.teresen_chat失败:', saveError);
                   // 如果保存失败，记录错误但不回退到0层消息
                   // 因为我们的目标是完全脱离0层消息，所以即使失败也不应该回退
                   console.error('❌ 保存失败，但不会回退到0层消息（完全脱离0层方案）');
                   throw saveError; // 抛出错误，让调用者处理
-                }
-
-                // 7. 更新变量状态和界面
-                let mvuSucceeded = false; // 移到外部，确保作用域正确
-
-                // 诊断MVU环境
-                this.debugMVUEnvironment();
-
-                if ('function' == typeof window.eventEmit) {
-                  const currentVariables = this.getAllVariables();
-
-                  console.log('🔄 准备触发MVU更新事件...');
-
-                  console.log('📊 当前变量数据:', currentVariables);
-
-                  const updateScript = aiResponse;
-                  const inputData = {
-                    old_variables: this.currentMvuState || currentVariables,
-                  };
-
-                  try {
-                    // 增加超时机制，防止 eventEmit 卡死
-                    const mvuPromise = window.eventEmit('mag_invoke_mvu', updateScript, inputData);
-                    const timeoutPromise = new Promise((_, reject) =>
-                      setTimeout(() => reject(new Error('MVU event timeout')), 3000),
-                    );
-
-                    await Promise.race([mvuPromise, timeoutPromise]);
-                    console.log('✅ MVU调用成功，等待结果...');
-
-                    // 检查MVU是否返回新状态
-                    if (inputData.new_variables) {
-                      console.log('✅ MVU返回新状态:', inputData.new_variables);
-                      this.currentMvuState = inputData.new_variables;
-                      // 重新渲染UI
-                      this.renderUI(this.currentMvuState.stat_data);
-                      mvuSucceeded = true;
-                    } else {
-                      console.log('⚠️ MVU没有返回新状态');
-                    }
-                  } catch (error) {
-                    console.error('❌ MVU调用失败:', error);
-                  }
-
-                  if (mvuSucceeded) {
-                    console.log('✅ MVU更新成功，变量状态已更新');
-                  } else {
-                    console.log('⚠️ MVU更新失败，但继续执行后续逻辑');
-                  }
-                } else {
-                  console.warn('⚠️ eventEmit函数不可用，无法触发MVU更新');
-
-                  // 强制更新MVU数据
-
-                  console.log('🔄 尝试强制更新MVU数据...');
-
-                  try {
-                    if (typeof window.mag_invoke_mvu === 'function') {
-                      const currentVariables = this.getAllVariables();
-
-                      window.mag_invoke_mvu(JSON.stringify(currentVariables));
-
-                      console.log('✅ 通过window.mag_invoke_mvu强制更新成功');
-                    } else {
-                      console.warn('⚠️ window.mag_invoke_mvu函数也不可用');
-                    }
-                  } catch (error) {
-                    console.error('❌ 强制更新MVU失败:', error);
-                  }
                 }
 
                 // 8. 🔥 不再更新0层消息的message字段（参考分析2.js的方式）
