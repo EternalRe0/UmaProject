@@ -225,6 +225,13 @@
             const checkEnd = performance.now();
             console.log(`⏱️ [性能] _checkNewGameSession 耗时: ${(checkEnd - checkStart).toFixed(2)}ms`);
 
+            // 🔥 恢复变量状态（参考分析2.js：从最后一条消息的variableState恢复）
+            console.log('🔄 恢复变量状态...');
+            const restoreStart = performance.now();
+            await this.restoreVariableStateFromLastMessage();
+            const restoreEnd = performance.now();
+            console.log(`⏱️ [性能] restoreVariableStateFromLastMessage 耗时: ${(restoreEnd - restoreStart).toFixed(2)}ms`);
+
             console.log('🔄 更新界面...');
             const interfaceStart = performance.now();
             await this.updateInterface();
@@ -256,6 +263,9 @@
             console.log(`⏱️ [性能] ========== 初始化完成，总耗时: ${totalInitTime}ms ==========`);
             console.log(`⏱️ [性能] 初始化各步骤耗时统计:`);
             console.log(`  - _checkNewGameSession: ${(checkEnd - checkStart).toFixed(2)}ms`);
+            if (typeof restoreEnd !== 'undefined' && typeof restoreStart !== 'undefined') {
+              console.log(`  - restoreVariableStateFromLastMessage: ${(restoreEnd - restoreStart).toFixed(2)}ms`);
+            }
             console.log(`  - updateInterface: ${(interfaceEnd - interfaceStart).toFixed(2)}ms`);
 
             console.groupEnd();
@@ -2590,6 +2600,55 @@
           // 从最后一条消息的variableState获取变量状态
           const variables = (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].variableState) || {};
           await this.saveChatHistoryToExtra(chatHistory, variables);
+        }
+
+        /**
+         * 🔥 从最后一条消息恢复变量状态（参考分析2.js的逻辑）
+         * 在页面初始化时调用，确保变量状态正确恢复
+         */
+        async restoreVariableStateFromLastMessage() {
+          try {
+            // 1. 加载聊天历史
+            const chatHistory = await this.loadChatHistoryFromExtra();
+            
+            if (chatHistory && chatHistory.length > 0) {
+              // 2. 从最后一条消息的variableState获取变量状态（参考分析2.js的_syncStateWithHistory）
+              const lastMessage = chatHistory[chatHistory.length - 1];
+              const variableState = lastMessage?.variableState || null;
+              
+              if (variableState) {
+                console.log('🔄 从最后一条消息恢复变量状态...');
+                
+                // 3. 更新本地状态
+                this.currentMvuState = JSON.parse(JSON.stringify(variableState));
+                
+                // 4. 🔥 调用commitUpdates提交变量更新（参考分析2.js的saveState）
+                if (typeof window.PwAic !== 'undefined' && window.PwAic.core && typeof window.PwAic.core.commitUpdates === 'function') {
+                  const variableGetter = () => JSON.parse(JSON.stringify(variableState));
+                  await window.PwAic.core.commitUpdates([variableGetter]);
+                  console.log('✅ 已通过commitUpdates恢复变量状态');
+                } else {
+                  // 备用方案：如果没有commitUpdates，至少更新本地状态
+                  console.warn('⚠️ commitUpdates不可用，仅更新本地状态');
+                }
+                
+                // 5. 重新渲染UI（如果有stat_data）
+                if (variableState.stat_data) {
+                  this.renderUI(variableState.stat_data);
+                }
+                
+                console.log('✅ 变量状态已从最后一条消息恢复');
+                return variableState;
+              } else {
+                console.log('📝 最后一条消息没有variableState，跳过变量恢复');
+              }
+            } else {
+              console.log('📝 聊天历史为空，跳过变量恢复');
+            }
+          } catch (error) {
+            console.error('❌ 恢复变量状态失败:', error);
+          }
+          return null;
         }
 
         // 🔥 获取当前周目的基础键名
