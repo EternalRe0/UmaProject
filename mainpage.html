@@ -3289,6 +3289,29 @@
               console.log('🔄 流式传输复选框事件已设置');
             }
 
+            // 🔥 设置聊天历史复选框事件
+            const chatHistoryCheckbox = document.getElementById('chat-history-checkbox');
+            if (chatHistoryCheckbox) {
+              chatHistoryCheckbox.addEventListener('change', (event) => {
+                const isEnabled = event.target.checked;
+                console.log(isEnabled ? '✅ 聊天历史已显示' : '❌ 聊天历史已隐藏');
+                this.toggleChatHistoryPanel(isEnabled);
+                // 存储聊天历史显示状态
+                localStorage.setItem('teresen_chat_history_visible', isEnabled.toString());
+              });
+              
+              // 恢复保存的状态
+              const savedState = localStorage.getItem('teresen_chat_history_visible');
+              if (savedState === 'true') {
+                chatHistoryCheckbox.checked = true;
+                this.toggleChatHistoryPanel(true);
+              } else {
+                chatHistoryCheckbox.checked = false;
+                this.toggleChatHistoryPanel(false);
+              }
+              console.log('🔄 聊天历史复选框事件已设置');
+            }
+
             if ('undefined' != typeof eventOn && void 0 !== window.iframe_events) {
 
               const e = window.iframe_events;
@@ -3697,6 +3720,13 @@
 
             // 🔥 提取并显示action选项（使用原始完整消息，包含action标签）
             this.updateActionOptions(originalMessage || n);
+            
+            // 🔥 如果聊天历史面板可见，更新聊天历史内容
+            const chatHistoryPanel = document.getElementById('chat-history-panel');
+            const chatHistoryCheckbox = document.getElementById('chat-history-checkbox');
+            if (chatHistoryPanel && chatHistoryCheckbox && chatHistoryCheckbox.checked) {
+              this.updateChatHistoryPanel();
+            }
 
             const perfEnd = performance.now();
             const totalTime = (perfEnd - perfStart).toFixed(2);
@@ -3880,6 +3910,99 @@
         }
 
         // 🔥 更新Action选项显示（从完整文本中提取）
+        /**
+         * 切换聊天历史面板显示/隐藏
+         * @param {boolean} show - 是否显示
+         */
+        toggleChatHistoryPanel(show) {
+          const panel = document.getElementById('chat-history-panel');
+          if (panel) {
+            panel.style.display = show ? 'block' : 'none';
+            if (show) {
+              this.updateChatHistoryPanel();
+            }
+          }
+        }
+
+        /**
+         * 更新聊天历史面板内容
+         * 只显示content标签的内容，不显示action选项
+         */
+        async updateChatHistoryPanel() {
+          try {
+            const contentList = document.getElementById('chat-history-content-list');
+            if (!contentList) return;
+
+            // 从extra.teresen_chat加载聊天历史
+            const chatHistory = await this.loadChatHistoryFromExtra();
+            
+            if (!chatHistory || chatHistory.length === 0) {
+              contentList.innerHTML = '<div style="color: #999; font-style: italic;">暂无聊天历史</div>';
+              return;
+            }
+
+            // 只显示assistant消息的content标签内容
+            let html = '';
+            let messageIndex = 0;
+            
+            for (const msg of chatHistory) {
+              if (msg.role === 'assistant' && msg.content) {
+                messageIndex++;
+                
+                // 提取content标签内容
+                const contentMatch = msg.content.match(/<content>(.*?)<\/content>/s);
+                if (contentMatch) {
+                  let contentText = contentMatch[1].trim();
+                  
+                  // 应用去八股规则
+                  contentText = this.applyAntiBoilerplateRules(contentText);
+                  
+                  // 转义HTML，防止XSS
+                  const escapeHtml = (text) => {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                  };
+                  
+                  // 格式化显示
+                  html += `<div style="
+                    margin-bottom: 20px;
+                    padding: 12px;
+                    background: rgba(255, 255, 255, 0.6);
+                    border-left: 3px solid rgba(139, 105, 20, 0.4);
+                    border-radius: 4px;
+                  ">
+                    <div style="
+                      font-size: 11px;
+                      color: #8b4513;
+                      margin-bottom: 8px;
+                      font-weight: bold;
+                    ">消息 #${messageIndex}</div>
+                    <div style="
+                      color: #654321;
+                      line-height: 1.8;
+                      white-space: pre-wrap;
+                      word-wrap: break-word;
+                    ">${escapeHtml(contentText).replace(/\n/g, '<br>')}</div>
+                  </div>`;
+                }
+              }
+            }
+
+            if (html === '') {
+              contentList.innerHTML = '<div style="color: #999; font-style: italic;">暂无正文内容</div>';
+            } else {
+              contentList.innerHTML = html;
+            }
+          } catch (error) {
+            console.error('❌ 更新聊天历史面板失败:', error);
+            const contentList = document.getElementById('chat-history-content-list');
+            if (contentList) {
+              contentList.innerHTML = '<div style="color: #d32f2f;">加载失败，请刷新页面</div>';
+            }
+          }
+        }
+
         updateActionOptions(fullText) {
           // 提取action标签内容
           const actionContent = this._extractLastTagContent('action', fullText);
@@ -24588,6 +24711,30 @@
                 " />
                 <span class="toggle-label" style="user-select: none;">流式</span>
               </label>
+              <!-- 🔥 聊天历史开关按钮 -->
+              <label class="chat-history-toggle" style="
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border: 1px solid rgba(139, 105, 20, 0.3);
+                border-radius: 4px;
+                background: rgba(139, 105, 20, 0.1);
+                color: #8b4513;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-size: 12px;
+                font-weight: 500;
+                margin-left: 4px;
+              " onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'" onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'">
+                <input type="checkbox" id="chat-history-checkbox" style="
+                  width: 16px;
+                  height: 16px;
+                  cursor: pointer;
+                  accent-color: #8b4513;
+                " />
+                <span class="toggle-label" style="user-select: none;">聊天</span>
+              </label>
             </div>
             <!-- 右侧按钮组：总结、返回、重新生成 -->
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -24653,6 +24800,33 @@
 
             <p class="story-text">等待故事内容加载...</p>
 
+          </div>
+
+          <!-- 🔥 聊天历史面板（可切换显示） -->
+          <div id="chat-history-panel" style="
+            display: none;
+            margin-top: 20px;
+            border-top: 2px solid rgba(139, 105, 20, 0.3);
+            padding-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            padding: 15px;
+          ">
+            <div style="
+              font-size: 14px;
+              font-weight: bold;
+              color: #8b4513;
+              margin-bottom: 10px;
+              padding-bottom: 8px;
+              border-bottom: 1px solid rgba(139, 105, 20, 0.2);
+            ">聊天历史</div>
+            <div id="chat-history-content-list" style="
+              color: #654321;
+              line-height: 1.8;
+              font-size: 13px;
+            ">加载中...</div>
           </div>
 
           <!-- 变量更新装饰 - 放在故事文本和选项之间 -->
