@@ -10612,6 +10612,72 @@ ${
                 throw new Error('AI未能生成开场剧情。');
               }
 
+              console.log('✅ AI生成完成，开始处理变量更新...');
+
+              // 🔥 参考分析2.js的_processVariables：处理变量更新
+              // 获取当前变量状态
+              let currentVariables = {};
+              try {
+                if (typeof getVariables === 'function') {
+                  currentVariables = getVariables({ type: 'message' }) || {};
+                }
+              } catch (error) {
+                console.warn('⚠️ 获取当前变量失败:', error);
+              }
+
+              // 调用MVU处理变量更新（参考分析2.js的_processVariables）
+              let updatedVariables = null;
+              let variableSnapshot = null;
+
+              if (typeof eventEmit === 'function') {
+                try {
+                  console.log('🔄 调用mag_invoke_mvu处理变量更新...');
+                  const inputData = { old_variables: currentVariables };
+
+                  // 增加超时机制，防止eventEmit卡死
+                  const mvuPromise = eventEmit('mag_invoke_mvu', openingStory, inputData);
+                  const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('MVU event timeout')), 5000),
+                  );
+
+                  await Promise.race([mvuPromise, timeoutPromise]);
+
+                  if (inputData.new_variables) {
+                    updatedVariables = inputData.new_variables;
+                    variableSnapshot = JSON.parse(JSON.stringify(updatedVariables));
+                    console.log('✅ MVU变量更新成功，已获取新变量状态');
+                  } else {
+                    console.warn('⚠️ MVU未返回新变量，使用当前变量状态');
+                    variableSnapshot = JSON.parse(JSON.stringify(currentVariables));
+                    updatedVariables = currentVariables;
+                  }
+                } catch (error) {
+                  console.error('❌ MVU调用失败:', error);
+                  // 使用当前变量状态作为备用
+                  variableSnapshot = JSON.parse(JSON.stringify(currentVariables));
+                  updatedVariables = currentVariables;
+                }
+              } else {
+                console.warn('⚠️ eventEmit不可用，跳过变量处理');
+                variableSnapshot = JSON.parse(JSON.stringify(currentVariables));
+                updatedVariables = currentVariables;
+              }
+
+              // 如果有变量更新，尝试提交更新（参考分析2.js的commitUpdates）
+              if (updatedVariables && updatedVariables !== currentVariables) {
+                try {
+                  // 尝试使用updateVariablesWith提交变量更新
+                  if (typeof updateVariablesWith === 'function') {
+                    await updateVariablesWith(() => updatedVariables, { type: 'chat' });
+                    console.log('✅ 变量更新已提交');
+                  } else {
+                    console.warn('⚠️ updateVariablesWith不可用，变量更新可能未生效');
+                  }
+                } catch (error) {
+                  console.error('❌ 提交变量更新失败:', error);
+                }
+              }
+
               // 保存到 extra.teresen_chat，而不是直接更新0层消息
               const messages = await getChatMessages(0);
               if (!messages || messages.length === 0) {
@@ -10624,14 +10690,14 @@ ${
                 messageZero.extra = {};
               }
 
-              // 创建聊天历史数组（开局选择后的第一条AI消息）
+              // 创建聊天历史数组（开局选择后的第一条AI消息，包含变量状态）
               const chatHistory = [
                 {
                   role: 'assistant',
                   content: openingStory,
                   id: 'opening_' + Date.now(),
                   timestamp: Date.now(),
-                  variableState: null, // 变量会在后续更新
+                  variableState: variableSnapshot, // 🔥 保存变量快照
                 },
               ];
 
@@ -10643,12 +10709,12 @@ ${
               // 使用SillyTavern.saveChat()保存，而不是setChatMessages更新0层消息
               if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
                 await SillyTavern.saveChat();
-                console.log('✅ 已通过SillyTavern.saveChat()保存到extra.teresen_chat');
+                console.log('✅ 已通过SillyTavern.saveChat()保存到extra.teresen_chat（包含变量状态）');
               } else {
                 // 如果SillyTavern.saveChat不可用，使用setChatMessages但只更新extra，不更新message
                 // 注意：这里不设置message字段，只更新extra
                 await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
-                console.log('✅ 已通过setChatMessages保存到extra.teresen_chat（未更新message字段）');
+                console.log('✅ 已通过setChatMessages保存到extra.teresen_chat（未更新message字段，包含变量状态）');
               }
 
               console.log('✅ 开场剧情生成完成并保存到 extra.teresen_chat');
@@ -11591,3 +11657,4 @@ ${
     </script>
   </body>
 </html>
+
