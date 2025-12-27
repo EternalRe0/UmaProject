@@ -10591,18 +10591,20 @@ ${
         }
         </开局设定>`;
 
-            // 使用 TavernHelper.generate 生成剧情
+            // 🔥 参考分析2.js：使用TavernHelper.generate但不创建聊天消息
+            // 关键配置：max_chat_history: 0 表示不使用聊天历史，不创建新的聊天消息
             if (typeof TavernHelper !== 'undefined' && TavernHelper.generate) {
               const generateConfig = {
                 injects: [
                   {
                     role: 'user',
                     content: openingPrompt,
-                    position: 'before_prompt',
+                    position: 'in_chat', // 🔥 改为in_chat，参考分析2.js
                     depth: 0,
                     should_scan: true,
                   },
                 ],
+                max_chat_history: 0, // 🔥 关键：不使用聊天历史，不创建新的聊天消息
                 should_stream: false,
               };
 
@@ -10678,16 +10680,17 @@ ${
                 }
               }
 
-              // 保存到 extra.teresen_chat，而不是直接更新0层消息
-              const messages = await getChatMessages(0);
-              if (!messages || messages.length === 0) {
-                throw new Error('无法获取到第0层消息，无法保存开场剧情。');
+              // 🔥 参考分析2.js的saveState：保存到最后一条消息，不更新0层消息
+              // 分析2.js使用 SillyTavern.chat[a.length - 1]，而不是getChatMessages(0)
+              if (typeof SillyTavern === 'undefined' || !SillyTavern.chat || SillyTavern.chat.length === 0) {
+                throw new Error('无法获取到聊天记录，无法保存开场剧情。');
               }
-              const messageZero = messages[0];
+
+              const lastMessage = SillyTavern.chat[SillyTavern.chat.length - 1];
 
               // 初始化 extra
-              if (!messageZero.extra) {
-                messageZero.extra = {};
+              if (!lastMessage.extra) {
+                lastMessage.extra = {};
               }
 
               // 创建聊天历史数组（开局选择后的第一条AI消息，包含变量状态）
@@ -10701,20 +10704,30 @@ ${
                 },
               ];
 
-              // 保存到 extra.teresen_chat（参考分析2.js的方式，不更新0层消息的message字段）
-              messageZero.extra.teresen_chat = chatHistory;
+              // 🔥 参考分析2.js：保存到extra.teresen_chat（对应分析2.js的pw_aic_chat）
+              // 使用JSON.parse(JSON.stringify())深拷贝，参考分析2.js
+              lastMessage.extra.teresen_chat = JSON.parse(JSON.stringify(chatHistory));
 
-              // 🔥 不更新0层消息的message字段，避免显示在聊天消息中
-              // 参考分析2.js的saveState函数：只保存到extra，不更新message
-              // 使用SillyTavern.saveChat()保存，而不是setChatMessages更新0层消息
-              if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
-                await SillyTavern.saveChat();
-                console.log('✅ 已通过SillyTavern.saveChat()保存到extra.teresen_chat（包含变量状态）');
-              } else {
-                // 如果SillyTavern.saveChat不可用，使用setChatMessages但只更新extra，不更新message
-                // 注意：这里不设置message字段，只更新extra
-                await TavernHelper.setChatMessages([messageZero], { refresh: 'none' });
-                console.log('✅ 已通过setChatMessages保存到extra.teresen_chat（未更新message字段，包含变量状态）');
+              // 🔥 参考分析2.js的saveState：只保存到extra，不更新message字段
+              // 使用SillyTavern.saveChat()保存，这是分析2.js的方式
+              await SillyTavern.saveChat();
+              console.log('✅ 已通过SillyTavern.saveChat()保存到extra.teresen_chat（参考分析2.js，不更新message字段）');
+
+              // 🔥 参考分析2.js：如果有变量更新，使用commitUpdates提交
+              // 但开局.html没有this.core.commitUpdates，所以使用updateVariablesWith作为备用
+              if (updatedVariables && updatedVariables !== currentVariables) {
+                try {
+                  // 分析2.js使用 this.core.commitUpdates([t])
+                  // 这里使用updateVariablesWith作为备用方案
+                  if (typeof updateVariablesWith === 'function') {
+                    await updateVariablesWith(() => updatedVariables, { type: 'chat' });
+                    console.log('✅ 变量更新已提交（使用updateVariablesWith）');
+                  } else {
+                    console.warn('⚠️ updateVariablesWith不可用，变量更新可能未生效');
+                  }
+                } catch (error) {
+                  console.error('❌ 提交变量更新失败:', error);
+                }
               }
 
               console.log('✅ 开场剧情生成完成并保存到 extra.teresen_chat');
@@ -11657,4 +11670,5 @@ ${
     </script>
   </body>
 </html>
+
 
