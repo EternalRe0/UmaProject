@@ -10708,10 +10708,61 @@ ${
               // 使用JSON.parse(JSON.stringify())深拷贝，参考分析2.js
               lastMessage.extra.teresen_chat = JSON.parse(JSON.stringify(chatHistory));
 
+              // 🔥 调试：检查保存前的数据
+              console.log('📋 准备保存的chatHistory:', {
+                length: chatHistory.length,
+                firstMessage: {
+                  role: chatHistory[0].role,
+                  hasContent: !!chatHistory[0].content,
+                  hasVariableState: !!chatHistory[0].variableState,
+                  variableStateKeys: chatHistory[0].variableState ? Object.keys(chatHistory[0].variableState) : [],
+                  variableStateStatData: chatHistory[0].variableState?.stat_data
+                    ? Object.keys(chatHistory[0].variableState.stat_data)
+                    : [],
+                },
+              });
+
               // 🔥 参考分析2.js的saveState：只保存到extra，不更新message字段
               // 使用SillyTavern.saveChat()保存，这是分析2.js的方式
               await SillyTavern.saveChat();
               console.log('✅ 已通过SillyTavern.saveChat()保存到extra.teresen_chat（参考分析2.js，不更新message字段）');
+
+              // 🔥 验证：保存后立即检查是否保存成功
+              try {
+                const verifyMessage = SillyTavern.chat[SillyTavern.chat.length - 1];
+                const verifyChatHistory = verifyMessage?.extra?.teresen_chat || [];
+
+                console.log('🔍 验证保存结果:', {
+                  hasExtra: !!verifyMessage?.extra,
+                  hasTeresenChat: !!verifyMessage?.extra?.teresen_chat,
+                  chatHistoryLength: verifyChatHistory.length,
+                  firstMessageExists: verifyChatHistory.length > 0,
+                  firstMessageRole: verifyChatHistory[0]?.role,
+                  hasVariableState: !!verifyChatHistory[0]?.variableState,
+                  variableStateType: typeof verifyChatHistory[0]?.variableState,
+                  variableStateIsObject:
+                    verifyChatHistory[0]?.variableState && typeof verifyChatHistory[0].variableState === 'object',
+                  variableStateKeys: verifyChatHistory[0]?.variableState
+                    ? Object.keys(verifyChatHistory[0].variableState)
+                    : [],
+                  hasStatData: !!verifyChatHistory[0]?.variableState?.stat_data,
+                  statDataKeys: verifyChatHistory[0]?.variableState?.stat_data
+                    ? Object.keys(verifyChatHistory[0].variableState.stat_data)
+                    : [],
+                });
+
+                if (verifyChatHistory.length > 0 && verifyChatHistory[0].variableState) {
+                  console.log('✅ 验证成功：variableState已保存');
+                  console.log(
+                    '📊 variableState内容预览:',
+                    JSON.stringify(verifyChatHistory[0].variableState).substring(0, 200) + '...',
+                  );
+                } else {
+                  console.warn('⚠️ 验证失败：variableState未保存或为空');
+                }
+              } catch (verifyError) {
+                console.error('❌ 验证保存结果时出错:', verifyError);
+              }
 
               // 🔥 参考分析2.js：如果有变量更新，使用commitUpdates提交
               // 但开局.html没有this.core.commitUpdates，所以使用updateVariablesWith作为备用
@@ -10742,9 +10793,29 @@ ${
               // 延迟一下，确保数据已保存
               setTimeout(async () => {
                 try {
-                  // 验证数据已保存
-                  const verifyMessages = await getChatMessages(0);
-                  const verifyHistory = verifyMessages?.[0]?.extra?.teresen_chat || [];
+                  // 🔥 验证数据已保存（检查最后一条消息，不是0层消息）
+                  // 因为我们保存的是 SillyTavern.chat[length - 1]，不是0层消息
+                  let verifyHistory = [];
+
+                  // 方法1：检查最后一条消息（我们保存的位置）
+                  if (typeof SillyTavern !== 'undefined' && SillyTavern.chat && SillyTavern.chat.length > 0) {
+                    const lastMsg = SillyTavern.chat[SillyTavern.chat.length - 1];
+                    verifyHistory = lastMsg?.extra?.teresen_chat || [];
+                    console.log('🔍 验证最后一条消息的extra.teresen_chat:', {
+                      hasExtra: !!lastMsg?.extra,
+                      hasTeresenChat: !!lastMsg?.extra?.teresen_chat,
+                      chatHistoryLength: verifyHistory.length,
+                    });
+                  }
+
+                  // 方法2：如果最后一条消息没有，检查0层消息（备用）
+                  if (verifyHistory.length === 0) {
+                    const verifyMessages = await getChatMessages(0);
+                    verifyHistory = verifyMessages?.[0]?.extra?.teresen_chat || [];
+                    console.log('🔍 验证0层消息的extra.teresen_chat（备用）:', {
+                      chatHistoryLength: verifyHistory.length,
+                    });
+                  }
 
                   if (verifyHistory.length > 0) {
                     console.log(`✅ 验证成功：extra.teresen_chat已有 ${verifyHistory.length} 条消息`);
