@@ -10658,6 +10658,104 @@ ${
               if (window.openingSelector && typeof window.openingSelector.stopChristmasMusic === 'function') {
                 window.openingSelector.stopChristmasMusic();
               }
+
+              // 🔥 生成完成后，触发统一入口重新判断并切换页面
+              // 延迟一下，确保数据已保存
+              setTimeout(async () => {
+                try {
+                  // 验证数据已保存
+                  const verifyMessages = await getChatMessages(0);
+                  const verifyHistory = verifyMessages?.[0]?.extra?.teresen_chat || [];
+
+                  if (verifyHistory.length > 0) {
+                    console.log(`✅ 验证成功：extra.teresen_chat已有 ${verifyHistory.length} 条消息`);
+                    console.log('🔄 触发统一入口重新判断并切换页面...');
+
+                    // 触发统一入口重新判断的逻辑
+                    // 由于统一入口是通过动态加载的，我们需要重新执行它的判断逻辑
+                    if (typeof window.reloadUnifiedEntry === 'function') {
+                      // 如果统一入口提供了重新加载函数，调用它
+                      window.reloadUnifiedEntry();
+                    } else {
+                      // 否则，直接加载正文页面
+                      const mainPageUrl = 'https://fastly.jsdelivr.net/gh/EternalRe0/UmaProject@main/mainpage.html';
+
+                      if (typeof $ !== 'undefined' && $.fn.load) {
+                        console.log('[开局完成] 使用jQuery.load()加载正文页面...');
+                        $('body').load(mainPageUrl, function (response, status, xhr) {
+                          if (status === 'error') {
+                            console.error('[开局完成] 加载正文页面失败:', xhr.status, xhr.statusText);
+                          } else {
+                            console.log('[开局完成] 正文页面加载完成');
+                          }
+                        });
+                      } else {
+                        // 备用方案：使用fetch
+                        console.log('[开局完成] 使用fetch加载正文页面...');
+                        const response = await fetch(mainPageUrl);
+                        if (!response.ok) {
+                          throw new Error(`HTTP错误! 状态: ${response.status}`);
+                        }
+
+                        const html = await response.text();
+                        const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                        const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+
+                        let bodyContent = bodyMatch ? bodyMatch[1].trim() : html;
+
+                        if (headMatch) {
+                          const headContent = headMatch[1];
+                          const styleMatch = headContent.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+                          const linkMatch = headContent.match(/<link[^>]*>/gi);
+
+                          let headStyles = '';
+                          if (styleMatch) {
+                            headStyles += styleMatch.join('\n');
+                          }
+                          if (linkMatch) {
+                            headStyles += linkMatch.join('\n');
+                          }
+
+                          if (headStyles) {
+                            bodyContent = headStyles + '\n' + bodyContent;
+                          }
+                        }
+
+                        document.body.innerHTML = bodyContent;
+
+                        setTimeout(() => {
+                          const scripts = document.querySelectorAll('script');
+                          scripts.forEach(oldScript => {
+                            if (
+                              oldScript.textContent.includes('开局') ||
+                              oldScript.textContent.includes('OpeningSelector')
+                            ) {
+                              return;
+                            }
+
+                            const newScript = document.createElement('script');
+                            Array.from(oldScript.attributes).forEach(attr => {
+                              newScript.setAttribute(attr.name, attr.value);
+                            });
+                            if (oldScript.src) {
+                              newScript.src = oldScript.src;
+                            } else {
+                              newScript.textContent = oldScript.textContent;
+                            }
+                            oldScript.parentNode.replaceChild(newScript, oldScript);
+                          });
+
+                          console.log('[开局完成] 正文页面加载完成');
+                        }, 100);
+                      }
+                    }
+                  } else {
+                    console.warn('⚠️ 验证失败：extra.teresen_chat为空，不切换页面');
+                  }
+                } catch (error) {
+                  console.error('❌ 切换页面时出错:', error);
+                }
+              }, 2000); // 延迟2秒，确保数据已保存
             } else {
               console.warn('⚠️ TavernHelper.generate 不可用，跳过开场剧情生成');
             }
@@ -11493,5 +11591,3 @@ ${
     </script>
   </body>
 </html>
-
-
