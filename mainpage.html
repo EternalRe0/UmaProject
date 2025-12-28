@@ -2173,12 +2173,9 @@
             // 更新正文内容（只在有content时更新，避免频繁DOM操作）
             if (contentText && contentText !== this.lastContentText) {
               this.lastContentText = contentText;
-              // 应用去八股规则
-              const processedContent = this.applyAntiBoilerplateRules(contentText);
-
               // 使用requestAnimationFrame优化DOM更新性能
               requestAnimationFrame(() => {
-                storyContent.innerHTML = `<p class="story-text">${processedContent}</p>`;
+                storyContent.innerHTML = `<p class="story-text">${contentText}</p>`;
 
                 // 应用字体设置（只在内容变化时应用一次）
                 const font = localStorage.getItem('teresen_font') || "'Source Han Serif', '思源宋体', serif";
@@ -3472,13 +3469,6 @@
             const extractEnd = performance.now();
             console.log(`⏱️ [性能] 提取content标签耗时: ${(extractEnd - extractStart).toFixed(2)}ms`);
 
-            // 应用去八股正则脚本
-            const regexStart = performance.now();
-            n = this.applyAntiBoilerplateRules(n);
-            const regexEnd = performance.now();
-            const regexTime = (regexEnd - regexStart).toFixed(2);
-            console.log(`⏱️ [性能] applyAntiBoilerplateRules 耗时: ${regexTime}ms`);
-
             const domStart = performance.now();
             const s = document.getElementById('story-content');
 
@@ -3526,148 +3516,6 @@
             const totalTime = (perfEnd - perfStart).toFixed(2);
             console.log(`⏱️ [性能] updateStoryContent 失败，总耗时: ${totalTime}ms`);
           }
-        }
-
-        applyAntiBoilerplateRules(content) {
-          if (!content || typeof content !== 'string') return content;
-
-          const ruleStart = performance.now();
-          let processed = content;
-
-          // 基础总则 - 删除特定词汇
-          processed = processed.replace(
-            /((?:绝望|麻木|勾起|一丝(?:丝)|封闭|僵住|恐惧|恐慌|惧怕|震惊|羞耻|屈辱|病态|崩溃|四肢百骸|cốgắng|subtly|yet|滚烫的岩浆|生理(?:的|性|层面|本能)|压抑|不似人声|机械地|野兽|幼兽|毒蛇|藤蔓|缠绕|肉刃|尖锐|冰冷|难以置信|不容(?:置疑|置喙)|泛白|他知道|她知道|濒临失控|意味深长|邪魅|邪笑|吞吃入腹|海啸|闪着|闪烁|低吼|唇舌|研磨|骨血|骨血之中|躁候|极致|弧度|小(?:兽|妖精|骚货|可爱|极度|东西|狐狸|野猫)|弓(?:起|着))[地丝的得]?\**)/g,
-            '  ',
-          );
-
-          // 删除总则 - 删除特定表达
-          processed = processed.replace(
-            /不似人声(的|地|得)?|(恨不|想要).*?塞进去[,\\.，。]?|不容[\u4e00-\u9fff]{2}(的|地|得)/g,
-            '',
-          );
-
-          // 警觉替换
-          processed = processed.replace(/(警觉|警觉)/g, this.getRandomReplacement(['留心', '稍作留意', '注意']));
-
-          // 餍足替换
-          processed = processed.replace(/(餍足)/g, '满足');
-
-          // 野兽系替换
-          processed = processed.replace(
-            /(小兽|幼兽)/g,
-            this.getRandomReplacement(['像小猫', '率直', '本能而急切', '像小狗', '纯粹凭着感觉', '懵懵懂懂']),
-          );
-
-          // 肉刃替换
-          processed = processed.replace(
-            /(肉刃|肉茎)/g,
-            this.getRandomReplacement(['肉柱', '阳具', '阴茎', '鸡巴', '巨物', '龙根']),
-          );
-
-          // 痉挛替换
-          processed = processed.replace(/(痉挛)/g, this.getRandomReplacement(['抽搐', '强力收缩', '肌肉紧张']));
-
-          // 甬道替换
-          processed = processed.replace(/(甬道)/g, '通道');
-
-          // 生理系替换
-          processed = processed.replace(
-            /(生理性|生理上|生理层面)/g,
-            this.getRandomReplacement(['本能的', '源自身体的']),
-          );
-
-          // 狡黠替换
-          processed = processed.replace(/(狡黠)/g, this.getRandomReplacement(['古灵精怪', '调皮', '促狭']));
-
-          // 灭顶替换
-          processed = processed.replace(/(灭顶)/g, this.getRandomReplacement(['强烈', '无边', '难以言喻']));
-
-          // 机械地替换
-          processed = processed.replace(/(机械地)/g, this.getRandomReplacement(['单调地', '主动地']));
-
-          // 扭曲替换
-          processed = processed.replace(/(扭曲)/g, this.getRandomReplacement(['别样', '不凡', '独特', '特殊']));
-
-          // 封闭替换
-          processed = processed.replace(/(封闭)/g, this.getRandomReplacement(['略有犹豫', '若有所思', '短暂沉默']));
-
-          // 四肢百骸替换
-          processed = processed.replace(
-            /(四肢百骸)/g,
-            this.getRandomReplacement(['全身', '周身', '从头到脚', '整个身体']),
-          );
-
-          // 喟叹替换
-          processed = processed.replace(/(喟叹)/g, this.getRandomReplacement(['叹息', '感叹']));
-
-          // 吼叫类替换
-          processed = processed.replace(
-            /(低吼)/g,
-            this.getRandomReplacement(['闷哼', '低喘', '喉音', '粗重的呼吸', '低吼']),
-          );
-
-          // 勐替换
-          processed = processed.replace(/(勐)/g, '猛');
-
-          // 全然替换
-          processed = processed.replace(/(全然)/g, this.getRandomReplacement(['纯粹', '完全', '全身心']));
-
-          // 不易察觉替换
-          processed = processed.replace(
-            /(不易察觉)/g,
-            this.getRandomReplacement(['难以察觉', '细微', '隐约', '难以觉察']),
-          );
-
-          // 一丝替换
-          processed = processed.replace(
-            /(一丝丝|一丝(?!不苟))/g,
-            this.getRandomReplacement(['些微', '些许', '一点', '一丝']),
-          );
-
-          // 外语词汇替换
-          processed = processed.replace(/(влажной)/g, this.getRandomReplacement(['湿润', '泛滥', '泥泞']));
-          processed = processed.replace(/(vén)/g, '静脉');
-          processed = processed.replace(/(subtly)/g, this.getRandomReplacement(['微妙的', '精妙的']));
-          processed = processed.replace(/(strangely)/g, '奇怪');
-          processed = processed.replace(/(cốgắng)/g, this.getRandomReplacement(['努力地', '尽力地', '力图']));
-
-          // 投石系删除 - 删除各种投石相关的表达
-          processed = processed.replace(
-            /(?:[,，]\s*)?(?:(?:如同|仿佛|犹如|像)\s+)?[^.。！？>:：""\n]*?(?:掉落|掉入|掉进|抛入|抛进|抛落|落入|投进|投入|丢进|丢入|放入|投下)[^,，.。！？>:：""\n]*?(?:(?:风|铁块|种子|铜块|金块|冰块|石头|石子|大石|巨石|炸弹|鹅卵石|清油|糖果|滴水|海绵|浓墨|闪电|催化剂|冷水|钥匙|水滴|冰水|冰山)[^,，.。！？>:：""\n]*?[,，.。！？>:：""\n][^,，.。！？>:：""\n]*?涟漪[)）]?|(?:风|铁块|种子|铜块|金块|冰块|石头|石子|大石|巨石|炸弹|鹅卵石|清油|糖果|滴水|海绵|浓墨|闪电|催化剂|冷水|钥匙|水滴|冰水|冰山)[)）]?|[,，.。！？>:：""\n][^,，.。！？>:：""\n]*?涟漪[)）]?|[,，.。！？>:：""\n])/g,
-            '',
-          );
-
-          // 其他常见替换
-          processed = processed.replace(/(绝望|麻木|崩溃)/g, '失落');
-          processed = processed.replace(/(恐惧|恐慌|惧怕)/g, '害怕');
-          processed = processed.replace(/(震惊|难以置信)/g, '惊讶');
-          processed = processed.replace(/(羞耻|屈辱)/g, '羞愧');
-
-          // 文本格式美化
-          processed = processed.replace(/“([^”]+)”/g, (match, p1) => {
-            return `<span class="dialogue-text">${match}</span>`;
-          });
-          processed = processed.replace(/\[([^\]]+)\]/g, (match, p1) => {
-            return `<span class="psychology-text">${match}</span>`;
-          });
-          processed = processed.replace(/\*\*([^*]+)\*\*/g, (match, p1) => {
-            return `<span class="scenery-text">${match}</span>`;
-          });
-
-          const ruleEnd = performance.now();
-          const ruleTime = (ruleEnd - ruleStart).toFixed(2);
-          if (ruleTime > 10) {
-            console.log(
-              `⏱️ [性能警告] applyAntiBoilerplateRules 耗时较长: ${ruleTime}ms (文本长度: ${content.length})`,
-            );
-          }
-
-          return processed;
-        }
-
-        getRandomReplacement(options) {
-          if (!Array.isArray(options) || options.length === 0) return options;
-          return options[Math.floor(Math.random() * options.length)];
         }
 
         // 🔥 更新变量更新装饰显示
@@ -4095,9 +3943,6 @@
                 const contentMatch = msg.content.match(/<content>(.*?)<\/content>/s);
                 if (contentMatch) {
                   let contentText = contentMatch[1].trim();
-
-                  // 应用去八股规则
-                  contentText = this.applyAntiBoilerplateRules(contentText);
 
                   // 转义HTML，防止XSS
                   const escapeHtml = text => {
