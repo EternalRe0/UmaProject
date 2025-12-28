@@ -33486,12 +33486,47 @@
       class TreisenAchievementSystem {
         constructor() {
           this.achievements = TREISEN_ACHIEVEMENTS;
-          this.completedAchievements = JSON.parse(localStorage.getItem('treisenAchievements') || '[]');
+          // 🔥 改为从 extra.teresen_achievements 加载，而不是localStorage
+          // 先初始化为空数组，然后在init中异步加载
+          this.completedAchievements = [];
         }
 
-        init() {
+        async init() {
           this.bindEvents();
           this.addAnimationStyles();
+
+          // 🔥 从 extra.teresen_achievements 加载成就数据
+          try {
+            const achievementsData = await this.loadAchievementsFromExtra();
+            this.completedAchievements = achievementsData.completed || [];
+            console.log(`✅ 从extra加载了 ${this.completedAchievements.length} 个已完成的成就`);
+
+            // 如果extra中没有数据，尝试从localStorage迁移（兼容旧版本）
+            if (this.completedAchievements.length === 0) {
+              const oldData = localStorage.getItem('treisenAchievements');
+              if (oldData) {
+                try {
+                  const oldCompleted = JSON.parse(oldData);
+                  if (Array.isArray(oldCompleted) && oldCompleted.length > 0) {
+                    console.log('📦 检测到localStorage中的旧成就数据，迁移到extra...');
+                    this.completedAchievements = oldCompleted;
+                    await this.saveAchievementsToExtra({
+                      completed: this.completedAchievements,
+                      custom: [],
+                    });
+                    // 迁移成功后，可以选择清除localStorage（可选）
+                    // localStorage.removeItem('treisenAchievements');
+                  }
+                } catch (e) {
+                  console.warn('⚠️ 迁移localStorage成就数据失败:', e);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('❌ 初始化成就系统失败:', error);
+            // 失败时回退到localStorage
+            this.completedAchievements = JSON.parse(localStorage.getItem('treisenAchievements') || '[]');
+          }
         }
 
         bindEvents() {
@@ -33794,8 +33829,91 @@
           return '未知条件';
         }
 
+        /**
+         * 从 extra.teresen_achievements 加载成就数据
+         * @returns {Object} 成就数据 { completed: [], custom: [] }
+         */
+        async loadAchievementsFromExtra() {
+          try {
+            // 🔥 参考 loadChatHistoryFromExtra：从SillyTavern.chat从后往前查找第一个有extra.teresen_achievements的消息
+            if (typeof SillyTavern === 'undefined' || !SillyTavern.chat || SillyTavern.chat.length === 0) {
+              console.log('📝 SillyTavern.chat为空，返回默认成就数据');
+              return { completed: [], custom: [] };
+            }
+
+            const chat = SillyTavern.chat;
+            // 从后往前查找第一个有extra.teresen_achievements的消息
+            for (let i = chat.length - 1; i >= 0; i--) {
+              const msg = chat[i];
+              if (msg.extra?.teresen_achievements) {
+                const achievements = msg.extra.teresen_achievements;
+                console.log(`✅ 从第${i}条消息的extra.teresen_achievements加载了成就数据`);
+                // 确保返回格式正确
+                return {
+                  completed: Array.isArray(achievements.completed) ? achievements.completed : [],
+                  custom: Array.isArray(achievements.custom) ? achievements.custom : [],
+                };
+              }
+            }
+
+            console.log('📝 未找到extra.teresen_achievements，返回默认成就数据');
+            return { completed: [], custom: [] };
+          } catch (error) {
+            console.error('❌ 加载成就数据失败:', error);
+            return { completed: [], custom: [] };
+          }
+        }
+
+        /**
+         * 保存成就数据到 extra.teresen_achievements
+         * @param {Object} achievements - 成就数据 { completed: [], custom: [] }
+         */
+        async saveAchievementsToExtra(achievements) {
+          try {
+            // 🔥 参考 saveChatHistoryToExtra：保存到最后一条消息的extra字段
+            if (typeof SillyTavern === 'undefined' || !SillyTavern.chat || SillyTavern.chat.length === 0) {
+              console.error('❌ 无法获取聊天记录，无法保存成就数据');
+              return;
+            }
+
+            const lastMessage = SillyTavern.chat[SillyTavern.chat.length - 1];
+            if (!lastMessage.extra) {
+              lastMessage.extra = {};
+            }
+
+            // 保存到 extra.teresen_achievements
+            lastMessage.extra.teresen_achievements = {
+              completed: Array.isArray(achievements.completed) ? achievements.completed : [],
+              custom: Array.isArray(achievements.custom) ? achievements.custom : [],
+            };
+
+            // 🔥 使用SillyTavern.saveChat()保存
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
+              await SillyTavern.saveChat();
+              console.log(`✅ 已通过SillyTavern.saveChat()保存成就数据到最后一条消息的 extra.teresen_achievements`);
+            } else {
+              // 如果SillyTavern.saveChat不可用，使用setChatMessages但只更新extra，不更新message
+              if (typeof TavernHelper !== 'undefined' && TavernHelper.setChatMessages) {
+                await TavernHelper.setChatMessages([lastMessage], { refresh: 'none' });
+                console.log(`✅ 已通过setChatMessages保存成就数据到最后一条消息的 extra.teresen_achievements`);
+              }
+            }
+          } catch (error) {
+            console.error('❌ 保存成就数据失败:', error);
+          }
+        }
+
         saveProgress() {
-          localStorage.setItem('treisenAchievements', JSON.stringify(this.completedAchievements));
+          // 🔥 改为保存到 extra.teresen_achievements，而不是localStorage
+          const achievementsData = {
+            completed: this.completedAchievements,
+            custom: [], // 如果以后需要自定义成就，可以扩展
+          };
+          this.saveAchievementsToExtra(achievementsData).catch(error => {
+            console.error('❌ 保存成就到extra失败，回退到localStorage:', error);
+            // 失败时回退到localStorage（兼容性）
+            localStorage.setItem('treisenAchievements', JSON.stringify(this.completedAchievements));
+          });
         }
 
         addAnimationStyles() {
