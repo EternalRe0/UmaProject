@@ -23243,10 +23243,12 @@
                       onmouseover="this.style.background='linear-gradient(135deg, rgba(139, 69, 19, 0.25), rgba(139, 69, 19, 0.15)'; this.style.transform='translateY(-1px)'"
                       onmouseout="this.style.background='linear-gradient(135deg, rgba(139, 69, 19, 0.15), rgba(139, 69, 19, 0.08)'; this.style.transform='translateY(0)'"
                     >
-                      <svg class="icon" fill="currentColor" viewBox="0 0 20 20" style="width: 18px; height: 18px">
+                      <svg class="icon" fill="currentColor" viewBox="0 0 24 24" style="width: 18px; height: 18px">
+                        <!-- 奖杯图标 -->
                         <path
-                          d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                          d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"
                         />
+                        <path d="M8 20h8v-2H8v2z" />
                       </svg>
                     </button>
                     <!-- 在校天数 -->
@@ -33522,6 +33524,16 @@
                 }
               }
             }
+            // 🔥 在初始化时检查成就，但延迟显示通知（等待页面完全加载）
+            // 延迟2秒后检查，确保变量系统已初始化
+            setTimeout(() => {
+              const beforeCheck = this.completedAchievements.length;
+              this.checkAchievements(true); // 传入true表示延迟显示通知
+              const afterCheck = this.completedAchievements.length;
+              if (afterCheck > beforeCheck) {
+                console.log(`🎉 初始化时发现 ${afterCheck - beforeCheck} 个新成就`);
+              }
+            }, 2000);
           } catch (error) {
             console.error('❌ 初始化成就系统失败:', error);
             // 失败时回退到localStorage
@@ -33544,17 +33556,20 @@
 
         getMvuValue(key) {
           try {
-            if (typeof Mvu !== 'undefined' && Mvu.getMvuVariable) {
-              const mvuData = Mvu.getMvuData({ type: 'chat' });
-              return Mvu.getMvuVariable(mvuData, key, { default_value: null });
-            }
+            // 🔥 使用与代码中其他地方完全相同的变量获取方式（参考updateTrainerStatus等方法）
+            // 例如：this.getVariable(e, 'stat_data.训练员.体力', 100)
+            const allVars = this.getAllVariables();
+            // 确保key以stat_data开头（如果成就定义中没有包含stat_data前缀）
+            const fullKey = key.startsWith('stat_data.') ? key : `stat_data.${key}`;
+            // 使用getVariable方法（与代码中其他地方一致，如updateTrainerStatus中的用法）
+            return this.getVariable(allVars, fullKey, null);
           } catch (error) {
             console.warn('MVU变量读取失败:', key, error);
           }
           return null;
         }
 
-        checkAchievements() {
+        checkAchievements(delayNotification = false) {
           let newAchievements = [];
 
           this.achievements.forEach(achievement => {
@@ -33615,7 +33630,17 @@
             if (isCompleted) {
               this.completedAchievements.push(achievement.id);
               newAchievements.push(achievement);
-              this.showAchievementNotification(achievement);
+              // 🔥 如果delayNotification为true，延迟显示通知（用于初始化时）
+              if (delayNotification) {
+                setTimeout(
+                  () => {
+                    this.showAchievementNotification(achievement);
+                  },
+                  3000 + newAchievements.length * 500,
+                ); // 每个通知间隔500ms
+              } else {
+                this.showAchievementNotification(achievement);
+              }
             }
           });
 
