@@ -5309,62 +5309,19 @@
               overlay.style.backgroundImage = 'none';
             }
 
-            // 🔥 使用右侧面板的缩放控制器（不再创建悬浮窗）
+            // 🔥 使用右侧面板的缩放控制器（始终在右侧面板顶部）
             const zoomControlsInline = document.getElementById('zoom-controls-inline');
             const zoomSliderInline = document.getElementById('zoom-slider-inline');
             const zoomValueInline = document.getElementById('zoom-value-inline');
 
-            // 显示右侧面板的缩放控制器
-            if (zoomControlsInline) {
-              zoomControlsInline.style.display = 'flex';
+            if (!zoomSliderInline || !zoomValueInline) {
+              console.error('❌ 缩放控制器元素未找到！');
+              return;
             }
 
             // 缩放滑块（使用右侧面板的）
-            let zoomSlider = zoomSliderInline;
-            let zoomValue = zoomValueInline;
-            let controls = null; // 🔥 声明 controls 变量
-            let zoomLabel = null; // 🔥 声明 zoomLabel 变量
-
-            // 如果右侧面板的控制器不存在，创建备用控制器（悬浮窗）
-            if (!zoomSlider || !zoomValue) {
-              controls = document.createElement('div');
-              controls.id = 'fullscreen-controls';
-              controls.style.cssText = `
-                position: absolute;
-                top: 20px;
-                right: 20px;
-                display: flex;
-                gap: 10px;
-                align-items: center;
-                z-index: 100000;
-                background: rgba(45, 27, 27, 0.9);
-                padding: 10px 15px;
-                border-radius: 8px;
-                border: 1px solid #8b7355;
-                backdrop-filter: blur(4px);
-              `;
-
-              zoomLabel = document.createElement('span');
-              zoomLabel.textContent = '缩放:';
-              zoomLabel.style.cssText = 'color: #e0dcd1; font-size: 14px; margin-right: 5px;';
-
-              zoomSlider = document.createElement('input');
-              zoomSlider.type = 'range';
-              zoomSlider.min = '0.5';
-              zoomSlider.max = '2';
-              zoomSlider.step = '0.1';
-              zoomSlider.value = '1';
-              zoomSlider.style.cssText = 'width: 150px; cursor: pointer;';
-
-              zoomValue = document.createElement('span');
-              zoomValue.id = 'zoom-value';
-              zoomValue.textContent = '100%';
-              zoomValue.style.cssText = 'color: #e0dcd1; font-size: 14px; min-width: 50px; text-align: center;';
-
-              controls.appendChild(zoomLabel);
-              controls.appendChild(zoomSlider);
-              controls.appendChild(zoomValue);
-            }
+            const zoomSlider = zoomSliderInline;
+            const zoomValue = zoomValueInline;
 
             // 计算初始缩放比例（电脑端默认140%）
             const screenWidth = window.innerWidth - 40;
@@ -5430,30 +5387,25 @@
             };
             closeBtn.onclick = () => this.toggleFullscreen();
 
-            // 🔥 组装控制栏（只有在使用悬浮窗时才需要）
-            if (controls) {
-              controls.appendChild(closeBtn);
-            } else {
-              // 🔥 如果使用右侧面板的控制器，关闭按钮添加到覆盖层右上角
-              closeBtn.style.cssText = `
-                position: absolute;
-                top: 20px;
-                right: 20px;
-                width: 32px;
-                height: 32px;
-                background: rgba(139, 105, 20, 0.8);
-                border: 2px solid #8b6914;
-                border-radius: 50%;
-                color: #e0dcd1;
-                font-size: 18px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s;
-                z-index: 100000;
-              `;
-            }
+            // 🔥 关闭按钮添加到覆盖层右上角
+            closeBtn.style.cssText = `
+              position: absolute;
+              top: 20px;
+              right: 20px;
+              width: 32px;
+              height: 32px;
+              background: rgba(139, 105, 20, 0.8);
+              border: 2px solid #8b6914;
+              border-radius: 50%;
+              color: #e0dcd1;
+              font-size: 18px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.2s;
+              z-index: 100000;
+            `;
 
             // 创建内容容器（限制尺寸，不直接扩展）
             const contentWrapper = document.createElement('div');
@@ -5485,13 +5437,8 @@
             // 组装覆盖层
             contentWrapper.appendChild(panels);
             overlay.appendChild(contentWrapper);
-            // 🔥 只有在使用悬浮窗时才添加到覆盖层
-            if (controls) {
-              overlay.appendChild(controls);
-            } else if (closeBtn && !controls) {
-              // 🔥 如果使用右侧面板的控制器，只添加关闭按钮
-              overlay.appendChild(closeBtn);
-            }
+            // 🔥 添加关闭按钮到覆盖层
+            overlay.appendChild(closeBtn);
 
             // 添加到body
             document.body.appendChild(overlay);
@@ -23750,6 +23697,69 @@
 
       <div class="parchment-page right-panel" id="right-panel-container" style="position: relative">
         <div class="panel-content">
+          <!-- 🔥 右侧面板顶部控制栏：全屏按钮和缩放控制器 -->
+          <div
+            id="right-panel-top-controls"
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 10px;
+              padding: 8px 12px;
+              margin-bottom: 10px;
+              background: rgba(244, 241, 232, 0.3);
+              border-radius: 6px;
+              border: 1px solid rgba(139, 105, 20, 0.15);
+            "
+          >
+            <!-- 左侧：全屏按钮 -->
+            <button
+              id="fullscreen-btn-right"
+              title="全屏"
+              style="
+                cursor: pointer;
+                background: rgba(139, 105, 20, 0.1);
+                border: 1px solid rgba(139, 105, 20, 0.3);
+                border-radius: 4px;
+                padding: 6px;
+                font-size: 1rem;
+                color: #8b4513;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+              "
+              onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'"
+              onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'"
+            >
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z"
+                />
+              </svg>
+            </button>
+            <!-- 右侧：缩放控制器（始终显示） -->
+            <div id="zoom-controls-inline" style="display: flex; align-items: center; gap: 8px; margin-left: auto">
+              <span style="color: #8b4513; font-size: 12px; font-weight: 500">缩放:</span>
+              <input
+                type="range"
+                id="zoom-slider-inline"
+                min="0.5"
+                max="2"
+                step="0.1"
+                value="1.2"
+                style="width: 120px; cursor: pointer"
+              />
+              <span
+                id="zoom-value-inline"
+                style="color: #8b4513; font-size: 12px; min-width: 45px; text-align: center; font-weight: 500"
+                >120%</span
+              >
+            </div>
+          </div>
+
           <!-- 赛马娘状态 -->
 
           <div class="uma-section">
@@ -23762,36 +23772,6 @@
               </svg>
 
               <h3>赛马娘状态</h3>
-
-              <button
-                class="roster-btn"
-                id="fullscreen-btn-right"
-                title="全屏"
-                style="
-                  cursor: pointer;
-                  background: 0 0;
-                  border: none;
-                  border-radius: 0.25rem;
-                  margin-left: auto;
-                  padding: 0.25rem;
-                  font-size: 1rem;
-                  color: #8b4513;
-                  transition: all 0.2s ease;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  width: 24px;
-                  height: 24px;
-                "
-                onmouseover="this.style.backgroundColor='#8b69141a'; this.style.transform='scale(1.1)'"
-                onmouseout="this.style.backgroundColor='transparent'; this.style.transform='scale(1)'"
-              >
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z"
-                  />
-                </svg>
-              </button>
             </div>
 
             <div class="uma-list" id="uma-status" style="display: block">
@@ -34019,3 +33999,4 @@
   - 只能在类脑、旅程二传
 ================================================================================
 -->
+
