@@ -5314,9 +5314,9 @@
             const zoomResetBtn = document.getElementById('zoom-reset-btn-inline');
             const zoomInBtn = document.getElementById('zoom-in-btn-inline');
 
-            // 🔥 电脑端默认120%缩放
-            let currentScale = 1.2;
-            const defaultScale = 1.2; // 重置时的默认缩放
+            // 🔥 电脑端默认100%缩放
+            let currentScale = 1.0;
+            const defaultScale = 1.0; // 重置时的默认缩放
             const minScale = 0.5;
             const maxScale = 2;
             const stepScale = 0.1;
@@ -5422,7 +5422,7 @@
               box-sizing: border-box;
             `;
 
-            // 应用初始缩放（限制尺寸，不直接扩展）- 默认120%缩放已经在applyZoom中应用了
+            // 应用初始缩放（限制尺寸，不直接扩展）- 默认100%缩放已经在applyZoom中应用了
             panels.style.position = 'relative';
             panels.style.margin = 'auto';
             panels.style.transformOrigin = 'center center';
@@ -5547,7 +5547,7 @@
             updateBtnState(btn);
             updateBtnState(document.getElementById('fullscreen-btn-right'));
 
-            console.log('🖥️ 进入全屏+缩放模式，初始缩放: 120%');
+            console.log('🖥️ 进入全屏+缩放模式，初始缩放: 100%');
           } catch (error) {
             console.error('❌ 进入全屏失败:', error);
             alert('全屏功能失败: ' + error.message);
@@ -23277,34 +23277,6 @@
               </button>
 
               <!-- 🔥 流式传输开关（移到存档、全屏按钮右边，美化样式） -->
-              <label
-                class="streaming-toggle"
-                style="
-                  display: flex;
-                  align-items: center;
-                  gap: 6px;
-                  padding: 6px 12px;
-                  border: 1px solid rgba(139, 105, 20, 0.3);
-                  border-radius: 4px;
-                  background: rgba(139, 105, 20, 0.1);
-                  color: #8b4513;
-                  cursor: pointer;
-                  transition: all 0.2s;
-                  font-size: 12px;
-                  font-weight: 500;
-                  margin-left: 4px;
-                "
-                onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'"
-                onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'"
-              >
-                <input
-                  type="checkbox"
-                  id="streaming-checkbox"
-                  checked
-                  style="width: 16px; height: 16px; cursor: pointer; accent-color: #8b4513"
-                />
-                <span class="toggle-label" style="user-select: none">流式</span>
-              </label>
               <!-- 🔥 聊天历史开关按钮 -->
               <label
                 class="chat-history-toggle"
@@ -25301,6 +25273,34 @@
                 <div style="font-size: 0.8em; color: #666">特大号</div>
               </button>
             </div>
+          </div>
+
+          <!-- 流式传输设置 -->
+          <div style="margin-bottom: 25px">
+            <h3 style="color: #8b6914; margin-bottom: 15px; font-size: 1.1rem; font-weight: 600">流式传输</h3>
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 12px;
+                border: 1px solid rgba(139, 105, 20, 0.3);
+                border-radius: 8px;
+                background: rgba(139, 105, 20, 0.05);
+                cursor: pointer;
+                transition: all 0.2s;
+              "
+              onmouseover="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'"
+              onmouseout="this.style.background='rgba(139, 105, 20, 0.05)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'"
+            >
+              <input
+                type="checkbox"
+                id="streaming-checkbox"
+                checked
+                style="width: 18px; height: 18px; cursor: pointer; accent-color: #8b4513"
+              />
+              <span style="color: #2d2d2d; font-size: 0.95rem; user-select: none">启用流式传输（实时显示AI回复）</span>
+            </label>
           </div>
 
           <!-- 预览效果 -->
