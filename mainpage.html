@@ -1,3 +1,4 @@
+
 <!--
 ================================================================================
   特雷森规则怪谈 - 训练员生存指南
@@ -3378,6 +3379,13 @@
           const callStack = new Error().stack?.split('\n').slice(1, 4).join(' -> ') || 'unknown';
           console.log(`⏱️ [性能] updateStoryContent 开始 (调用来源: ${callStack})`);
 
+          // 🔥 检查是否正在查看聊天历史，如果是则跳过（避免覆盖聊天历史显示）
+          const chatHistoryCheckbox = document.getElementById('chat-history-checkbox');
+          if (chatHistoryCheckbox && chatHistoryCheckbox.checked) {
+            console.log('⏭️ 正在查看聊天历史，跳过updateStoryContent以避免覆盖聊天历史显示');
+            return;
+          }
+
           // 🔥 关键修复：如果正在流式传输，跳过更新（避免覆盖流式传输显示的内容）
           if (this.isStreaming) {
             console.log('⏭️ 正在流式传输，跳过updateStoryContent（避免覆盖流式内容）');
@@ -6596,6 +6604,7 @@
             return timeA - timeB;
           });
 
+          let messageNumber = 0; // 🔥 消息序号计数器
           sortedMessages.forEach((msg, index) => {
             // 获取内容信息
             let content = msg.content || msg.message || '';
@@ -6604,6 +6613,8 @@
             if (!content.trim()) {
               return;
             }
+
+            messageNumber++; // 只对有效消息计数
 
             // 如果是AI消息，提取content标签内容
             if (msg.role === 'assistant' || msg.role === 'ai') {
@@ -6624,6 +6635,12 @@
                 padding-bottom: 15px;
                 border-bottom: 1px solid rgba(139, 105, 20, 0.1);
               ">
+                <div style="
+                  color: rgba(139, 105, 20, 0.6);
+                  font-size: 0.85em;
+                  margin-bottom: 8px;
+                  font-weight: 500;
+                ">第 ${messageNumber} 条消息</div>
                 <div class="message-content" style="
                   color: #2d1810;
                   line-height: 1.8;
@@ -34013,3 +34030,4 @@
   - 只能在类脑、旅程二传
 ================================================================================
 -->
+
