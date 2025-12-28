@@ -334,11 +334,7 @@
         setupEventListeners() {
           $(document).ready(() => {
             (console.log('🔧 使用jQuery设置事件监听器...'),
-              $('#save-load-btn').on('click', () => {
-                const e = document.getElementById('save-load-sound');
-
-                (e && e.play().catch(e => console.log('音效播放失败:', e)), this.handleSaveLoad());
-              }),
+              // 🔥 存档按钮已删除
               $('#fullscreen-btn').on('click', () => this.toggleFullscreen()),
               $('#fullscreen-btn-right').on('click', () => this.toggleFullscreen()),
               $('#debug-btn').on('click', () => this.debugVariables()),
@@ -3172,26 +3168,23 @@
             }
 
             // 🔥 设置聊天历史复选框事件
+            // 🔥 查看聊天按钮 - 直接打开聊天记录查看器（带编辑功能）
             const chatHistoryCheckbox = document.getElementById('chat-history-checkbox');
             if (chatHistoryCheckbox) {
-              chatHistoryCheckbox.addEventListener('change', event => {
+              chatHistoryCheckbox.addEventListener('change', async event => {
                 const isEnabled = event.target.checked;
-                console.log(isEnabled ? '✅ 聊天历史已显示' : '❌ 聊天历史已隐藏');
-                this.toggleChatHistoryPanel(isEnabled);
-                // 存储聊天历史显示状态
-                localStorage.setItem('teresen_chat_history_visible', isEnabled.toString());
+                if (isEnabled) {
+                  console.log('✅ 打开聊天记录查看器...');
+                  await this.handleChatHistory();
+                } else {
+                  // 关闭聊天记录查看器（如果打开的话）
+                  const modal = document.getElementById('chat-history-modal');
+                  if (modal) {
+                    modal.remove();
+                  }
+                }
               });
-
-              // 恢复保存的状态
-              const savedState = localStorage.getItem('teresen_chat_history_visible');
-              if (savedState === 'true') {
-                chatHistoryCheckbox.checked = true;
-                this.toggleChatHistoryPanel(true);
-              } else {
-                chatHistoryCheckbox.checked = false;
-                this.toggleChatHistoryPanel(false);
-              }
-              console.log('🔄 聊天历史复选框事件已设置');
+              console.log('🔄 查看聊天按钮事件已设置');
             }
 
             if ('undefined' != typeof eventOn && void 0 !== window.iframe_events) {
@@ -3531,12 +3524,7 @@
             // 🔥 提取并显示action选项（使用原始完整消息，包含action标签）
             this.updateActionOptions(originalMessage || n);
 
-            // 🔥 如果聊天历史面板可见，更新聊天历史内容
-            const chatHistoryPanel = document.getElementById('chat-history-panel');
-            const chatHistoryCheckbox = document.getElementById('chat-history-checkbox');
-            if (chatHistoryPanel && chatHistoryCheckbox && chatHistoryCheckbox.checked) {
-              this.updateChatHistoryPanel();
-            }
+            // 聊天历史面板已移除，不再更新
 
             const perfEnd = performance.now();
             const totalTime = (perfEnd - perfStart).toFixed(2);
@@ -5387,15 +5375,7 @@
               : ((e.style.display = 'block'), (t.style.display = 'none')));
         }
 
-        async handleSaveLoad() {
-          try {
-            console.log('💾 打开存档管理器...');
-
-            this.openSaveManagerModal();
-          } catch (e) {
-            console.error('❌ 打开存档管理器失败:', e);
-          }
-        }
+        // 🔥 存档功能已删除
 
         toggleFullscreen() {
           // 🔥 全屏+缩放功能：创建覆盖层，支持缩放并保持原有比例
@@ -6094,21 +6074,7 @@
           }
         }
 
-        async handleHistory() {
-          try {
-            // 播放人物历程音效
-            const sound = document.getElementById('journey-history-sound');
-            if (sound) {
-              sound.currentTime = 0;
-              sound.play().catch(e => console.log('播放人物历程音效失败:', e));
-            }
-
-            console.log('📚 打开人物历程总结界面...');
-            await this.showHistoryMenu();
-          } catch (e) {
-            console.error('❌ 人物历程功能失败:', e);
-          }
-        }
+        // 🔥 人物历程功能已删除
 
         // 显示卡面展示模态框
         showCardDisplayModal(selectedUmaName = null) {
@@ -6282,122 +6248,7 @@
           });
         }
 
-        // 显示历程菜单
-        async showHistoryMenu() {
-          // 移除已存在的菜单
-          const existingMenu = document.getElementById('history-menu-modal');
-          if (existingMenu) {
-            existingMenu.remove();
-          }
-
-          // 创建菜单弹窗
-          const menu = document.createElement('div');
-          menu.id = 'history-menu-modal';
-          menu.innerHTML = `
-            <div class="summary-modal-overlay" style="
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background: rgba(0, 0, 0, 0.8);
-              z-index: 10000;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            ">
-              <div class="summary-modal-content" style="
-                background: linear-gradient(135deg, #f5f0e8, #ede4d3);
-                border: 2px solid #d4af37;
-                border-radius: 12px;
-                width: 90%;
-                max-width: 500px;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-              ">
-                <div class="summary-modal-header" style="
-                  padding: 20px;
-                  border-bottom: 1px solid #d4af37;
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                  background: linear-gradient(135deg, #f0e6d2, #e8dcc6);
-                ">
-                  <h3 style="
-                    color: #8b4513;
-                    margin: 0;
-                    font-size: 18px;
-                    font-weight: bold;
-                  ">📚 人物历程功能</h3>
-                  <button class="menu-close-btn" style="
-                    background: none;
-                    border: none;
-                    color: #8b4513;
-                    font-size: 24px;
-                    cursor: pointer;
-                    padding: 5px;
-                    border-radius: 4px;
-                    transition: background 0.2s;
-                  ">&times;</button>
-                </div>
-                <div class="summary-modal-body" style="
-                  padding: 20px;
-                  display: flex;
-                  flex-direction: column;
-                  gap: 15px;
-                ">
-                  <button id="view-chat-history-btn" style="
-                    background: linear-gradient(135deg, #d4af37, #e6c347);
-                    color: #8b4513;
-                    border: 1px solid #8b4513;
-                    padding: 15px 20px;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                  ">💬 查看聊天记录</button>
-                  
-                  
-                </div>
-              </div>
-            </div>
-          `;
-
-          document.body.appendChild(menu);
-
-          // 🔥 检查是否在全屏状态，如果是就移动到覆盖层内部
-          this.ensureModalInOverlay(menu);
-
-          // 绑定关闭事件
-          const closeBtn = menu.querySelector('.menu-close-btn');
-          const overlay = menu.querySelector('.summary-modal-overlay');
-          const closeMenu = () => menu.remove();
-
-          closeBtn.addEventListener('click', closeMenu);
-          overlay.addEventListener('click', e => {
-            if (e.target === overlay) closeMenu();
-          });
-
-          // 绑定功能按钮事件
-          menu.querySelector('#view-chat-history-btn').addEventListener('click', () => {
-            closeMenu();
-            this.handleChatHistory();
-          });
-
-          // 添加悬停效果
-          const buttons = menu.querySelectorAll('button');
-          buttons.forEach(btn => {
-            btn.addEventListener('mouseenter', () => {
-              btn.style.transform = 'scale(1.05)';
-              btn.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.4)';
-            });
-            btn.addEventListener('mouseleave', () => {
-              btn.style.transform = 'scale(1)';
-              btn.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-            });
-          });
-        }
+        // 🔥 人物历程功能已删除
 
         // 处理聊天记录查看（从extra.teresen_chat加载）
         async handleChatHistory() {
@@ -8998,7 +8849,8 @@
           }
         }
 
-        async loadLocalSave() {
+        // 🔥 存档功能已删除
+        async loadLocalSave_DELETED() {
           try {
             console.log('📂 加载本地存档...');
 
@@ -9104,7 +8956,8 @@
           }
         }
 
-        async loadSaveData(e) {
+        // 🔥 存档功能已删除
+        async loadSaveData_DELETED(e) {
           try {
             // 🔥 恢复变量状态
             if (e.variables && 'function' == typeof eventEmit) {
@@ -11417,7 +11270,8 @@
           }
         }
 
-        async loadGame(slotId = 'slot_1') {
+        // 🔥 存档功能已删除
+        async loadGame_DELETED(slotId = 'slot_1') {
           try {
             const allSaves = this.getSavesFromStorage();
             const saveData = allSaves[slotId];
@@ -14669,7 +14523,8 @@
 
         // 新增：完整的存档管理器模态框
 
-        openSaveManagerModal() {
+        // 🔥 存档功能已删除
+        openSaveManagerModal_DELETED() {
           const modalId = 'saveManagerModal';
 
           if (document.getElementById(modalId)) {
@@ -23126,33 +22981,7 @@
           >
             <!-- 左侧按钮组：存档和全屏 -->
             <div style="display: flex; align-items: center; gap: 6px">
-              <button
-                id="save-load-btn"
-                class="story-action-btn"
-                title="存档/读档"
-                style="
-                  width: 32px;
-                  height: 32px;
-                  padding: 0;
-                  border: 1px solid rgba(139, 105, 20, 0.3);
-                  border-radius: 4px;
-                  background: rgba(139, 105, 20, 0.1);
-                  color: #8b4513;
-                  cursor: pointer;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  transition: all 0.2s;
-                "
-                onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'"
-                onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'"
-              >
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h-1v5.586l-2.293-2.293z"
-                  />
-                </svg>
-              </button>
+              <!-- 🔥 存档按钮已删除 -->
               <button
                 id="fullscreen-btn"
                 class="story-action-btn"
