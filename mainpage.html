@@ -5238,7 +5238,7 @@
             // 获取原始尺寸和比例
             const computedStyle = window.getComputedStyle(panels);
             const originalWidth = parseFloat(computedStyle.width) || 1600;
-            const originalHeight = parseFloat(computedStyle.height) || 575;
+            const originalHeight = parseFloat(computedStyle.height) || 775;
             const originalAspectRatio = originalWidth / originalHeight;
 
             // 保存原始样式
@@ -5309,43 +5309,61 @@
               overlay.style.backgroundImage = 'none';
             }
 
-            // 创建控制栏（缩放控制）
-            const controls = document.createElement('div');
-            controls.id = 'fullscreen-controls';
-            controls.style.cssText = `
-              position: absolute;
-              top: 20px;
-              right: 20px;
-              display: flex;
-              gap: 10px;
-              align-items: center;
-              z-index: 100000;
-              background: rgba(45, 27, 27, 0.9);
-              padding: 10px 15px;
-              border-radius: 8px;
-              border: 1px solid #8b7355;
-              backdrop-filter: blur(4px);
-            `;
+            // 🔥 使用右侧面板的缩放控制器（不再创建悬浮窗）
+            const zoomControlsInline = document.getElementById('zoom-controls-inline');
+            const zoomSliderInline = document.getElementById('zoom-slider-inline');
+            const zoomValueInline = document.getElementById('zoom-value-inline');
 
-            // 缩放标签
-            const zoomLabel = document.createElement('span');
-            zoomLabel.textContent = '缩放:';
-            zoomLabel.style.cssText = 'color: #e0dcd1; font-size: 14px; margin-right: 5px;';
+            // 显示右侧面板的缩放控制器
+            if (zoomControlsInline) {
+              zoomControlsInline.style.display = 'flex';
+            }
 
-            // 缩放滑块
-            const zoomSlider = document.createElement('input');
-            zoomSlider.type = 'range';
-            zoomSlider.min = '0.5';
-            zoomSlider.max = '2';
-            zoomSlider.step = '0.1';
-            zoomSlider.value = '1';
-            zoomSlider.style.cssText = 'width: 150px; cursor: pointer;';
+            // 缩放滑块（使用右侧面板的）
+            let zoomSlider = zoomSliderInline;
+            let zoomValue = zoomValueInline;
 
-            // 缩放值显示
-            const zoomValue = document.createElement('span');
-            zoomValue.id = 'zoom-value';
-            zoomValue.textContent = '100%';
-            zoomValue.style.cssText = 'color: #e0dcd1; font-size: 14px; min-width: 50px; text-align: center;';
+            // 如果右侧面板的控制器不存在，创建备用控制器（悬浮窗）
+            if (!zoomSlider || !zoomValue) {
+              const controls = document.createElement('div');
+              controls.id = 'fullscreen-controls';
+              controls.style.cssText = `
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                z-index: 100000;
+                background: rgba(45, 27, 27, 0.9);
+                padding: 10px 15px;
+                border-radius: 8px;
+                border: 1px solid #8b7355;
+                backdrop-filter: blur(4px);
+              `;
+
+              const zoomLabel = document.createElement('span');
+              zoomLabel.textContent = '缩放:';
+              zoomLabel.style.cssText = 'color: #e0dcd1; font-size: 14px; margin-right: 5px;';
+
+              zoomSlider = document.createElement('input');
+              zoomSlider.type = 'range';
+              zoomSlider.min = '0.5';
+              zoomSlider.max = '2';
+              zoomSlider.step = '0.1';
+              zoomSlider.value = '1';
+              zoomSlider.style.cssText = 'width: 150px; cursor: pointer;';
+
+              zoomValue = document.createElement('span');
+              zoomValue.id = 'zoom-value';
+              zoomValue.textContent = '100%';
+              zoomValue.style.cssText = 'color: #e0dcd1; font-size: 14px; min-width: 50px; text-align: center;';
+
+              controls.appendChild(zoomLabel);
+              controls.appendChild(zoomSlider);
+              controls.appendChild(zoomValue);
+              overlay.appendChild(controls);
+            }
 
             // 计算初始缩放比例（电脑端默认140%）
             const screenWidth = window.innerWidth - 40;
@@ -17929,7 +17947,7 @@
 
           max-width: 1600px;
 
-          height: 575px;
+          height: 775px;
 
           margin: auto;
 
@@ -33653,7 +33671,7 @@
                 padding: 15px 20px;
                 border-radius: 12px;
                 box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-                z-index: 10000;
+                z-index: 100002;
                 display: flex;
                 align-items: center;
                 gap: 12px;
