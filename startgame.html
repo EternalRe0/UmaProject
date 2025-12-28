@@ -1036,26 +1036,6 @@
         flex-shrink: 0;
       }
 
-      .uma-avatar-placeholder {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 90px;
-        height: 90px;
-        background: linear-gradient(135deg, #f4f1e8 0%, #e8e0d0 100%);
-        border-radius: 50%;
-        border: 3px solid #8b4513;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 32px;
-        color: #8b4513;
-        opacity: 1;
-        transition: opacity 0.3s ease;
-        z-index: 1;
-        box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
-      }
-
       .uma-avatar {
         width: 90px;
         height: 90px;
@@ -1064,35 +1044,11 @@
         border: 3px solid #8b4513;
         box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
         transition: all 0.3s ease;
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 2;
-        opacity: 0;
+        display: block;
       }
 
       .uma-avatar.loaded {
         opacity: 1;
-      }
-
-      /* 圣诞节头像框 */
-      .uma-avatar-frame {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 10;
-        opacity: 1;
-        transition: opacity 0.3s ease;
-      }
-
-      .uma-avatar-frame img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
       }
 
       .uma-card:hover .uma-avatar {
@@ -4400,8 +4356,6 @@
 
         // 重新绑定卡片事件（用于动态生成的卡片）
         rebindCardEvents() {
-          console.log('🔄 重新绑定卡片事件...');
-
           // 为当前页面上的所有卡片添加备用事件绑定
           $('.selection-card').each((index, element) => {
             const $element = $(element);
@@ -4409,15 +4363,12 @@
             if (cardId && !element.onclick) {
               // 只为还没有onclick的元素添加
               element.onclick = e => {
-                console.log('🔧 重新绑定的onclick事件触发:', cardId);
                 e.preventDefault();
                 e.stopPropagation();
                 this.handleCardSelection(e);
               };
             }
           });
-
-          console.log('🔄 重新绑定完成，当前页面卡片数量:', $('.selection-card').length);
         }
 
         // 绑定抽奖选项事件
@@ -6615,16 +6566,12 @@
                     avatar && showAvatar
                       ? `
                     <div class="uma-avatar-wrapper">
-                      <div class="uma-avatar-placeholder">🐴</div>
                       <img 
                         src="${avatar}" 
                         alt="${uma}" 
                         class="uma-avatar" 
                         loading="lazy"
                       >
-                      <div class="uma-avatar-frame">
-                        <img src="https://files.catbox.moe/jq9b8s.png" alt="头像框">
-                      </div>
                     </div>
                   `
                       : ''
@@ -6640,20 +6587,13 @@
             // 为图片添加加载完成事件处理
             if (avatar && showAvatar) {
               const img = card.find('img.uma-avatar');
-              const placeholder = card.find('.uma-avatar-placeholder');
 
               // 如果图片已缓存（complete状态），直接显示
               if (img.length > 0 && img[0].complete && img[0].naturalHeight !== 0) {
                 img.addClass('loaded');
-                placeholder.css('opacity', '0');
               } else if (img.length > 0) {
                 img.on('load', function () {
                   $(this).addClass('loaded');
-                  placeholder.css('opacity', '0');
-                });
-                img.on('error', function () {
-                  $(this).hide();
-                  placeholder.css('opacity', '1');
                 });
               }
             }
@@ -7410,18 +7350,6 @@
                                   border: 4px solid #d4af37;
                                   box-shadow: 0 6px 16px rgba(139, 69, 19, 0.4);
                                   display: block;
-                                  position: relative;
-                                  z-index: 2;
-                                ">
-                                <img src="https://files.catbox.moe/jq9b8s.png" alt="头像框" style="
-                                  position: absolute;
-                                  top: 0;
-                                  left: 0;
-                                  width: 100%;
-                                  height: 100%;
-                                  pointer-events: none;
-                                  z-index: 10;
-                                  object-fit: cover;
                                 ">
                               </div>`
                                   : ''
@@ -7780,16 +7708,12 @@
                     avatar
                       ? `
                     <div class="uma-avatar-wrapper">
-                      <div class="uma-avatar-placeholder">🐴</div>
                       <img 
                         src="${avatar}" 
                         alt="${uma}" 
                         class="uma-avatar" 
                         loading="lazy"
                       >
-                      <div class="uma-avatar-frame">
-                        <img src="https://files.catbox.moe/jq9b8s.png" alt="头像框">
-                      </div>
                     </div>
                   `
                       : ''
@@ -7805,19 +7729,12 @@
             // 为图片添加加载完成事件处理
             if (avatar) {
               const img = card.find('img.uma-avatar');
-              const placeholder = card.find('.uma-avatar-placeholder');
 
               if (img.length > 0 && img[0].complete && img[0].naturalHeight !== 0) {
                 img.addClass('loaded');
-                placeholder.css('opacity', '0');
               } else if (img.length > 0) {
                 img.on('load', function () {
                   $(this).addClass('loaded');
-                  placeholder.css('opacity', '0');
-                });
-                img.on('error', function () {
-                  $(this).hide();
-                  placeholder.css('opacity', '1');
                 });
               }
             }
@@ -7915,18 +7832,6 @@
                       border: 4px solid #d4af37;
                       box-shadow: 0 6px 16px rgba(139, 69, 19, 0.4);
                       display: block;
-                      position: relative;
-                      z-index: 2;
-                    ">
-                    <img src="https://files.catbox.moe/jq9b8s.png" alt="头像框" style="
-                      position: absolute;
-                      top: 0;
-                      left: 0;
-                      width: 100%;
-                      height: 100%;
-                      pointer-events: none;
-                      z-index: 10;
-                      object-fit: cover;
                     ">
                   </div>`
                       : ''
