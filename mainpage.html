@@ -166,9 +166,6 @@
             );
           }
 
-          // 初始化马娘记名册已添加集合，避免重复计算
-          this.umaRosterAdded = new Set();
-
           // 初始化状态动画标志，防止重复触发
           this.statusAnimationActive = false;
 
@@ -965,14 +962,6 @@
           // 更新现有的马娘项目，而不是重新生成整个HTML
 
           Object.keys(n).forEach((umaName, index) => {
-            // 自动添加到马娘记名册（只在首次遇到时添加）
-            if (window.teresenDebug && window.teresenDebug.addUmaToRoster && !this.umaRosterAdded.has(umaName)) {
-              window.teresenDebug.addUmaToRoster(umaName, {
-                notes: `首次遇到: ${new Date().toLocaleString('zh-CN')}`,
-              });
-              this.umaRosterAdded.add(umaName);
-            }
-
             const n = this.getVariable(t, `stat_data.马娘.${umaName}.好感度`, 20),
               o = this.getVariable(t, `stat_data.马娘.${umaName}.状态`, '正常'),
               a = this.getUmaDescription(umaName, n, o),
@@ -8587,7 +8576,6 @@
             // 清除其他可能的缓存键（不以teresen_开头的）
             const otherCacheKeys = [
               'treisenAchievements', // 成就系统（注意拼写是treisen）
-              'uma_roster', // 马娘记名册
               'item_pending_actions', // 待执行动作
               'game_current_day', // 游戏当前天数
               'frontend_chat_history_fallback', // 回退历史记录
@@ -8724,11 +8712,6 @@
               clearAllRules: () => this.clearAllRules(),
               getUserRules: () => this.getUserRules(),
 
-              // 马娘记名册功能
-              openUmaRoster: () => this.openUmaRoster(),
-              addUmaToRoster: umaName => this.addUmaToRoster(umaName),
-              getUmaRoster: () => this.getUmaRoster(),
-
               // 状态判定动画系统
               checkStatusTriggers: () => this.checkStatusTriggers(),
               triggerStatusAnimation: (stamina, sanity) => this.triggerStatusAnimation(stamina, sanity),
@@ -8826,33 +8809,6 @@
                 console.log('禁忌规则:', this.getVariable(t, 'stat_data.世界.禁忌规则', 'N/A')))
               : console.warn('⚠️ 未找到世界数据'),
             console.groupEnd());
-        }
-
-        // 马娘记名册功能实现
-        openUmaRoster() {
-          if (window.umaRosterSystem) {
-            window.umaRosterSystem.openUmaRoster();
-          } else {
-            console.error('马娘记名册系统未初始化');
-          }
-        }
-
-        addUmaToRoster(umaName, details = {}) {
-          if (window.umaRosterSystem) {
-            return window.umaRosterSystem.addUmaToRoster(umaName, details);
-          } else {
-            console.error('马娘记名册系统未初始化');
-            return false;
-          }
-        }
-
-        getUmaRoster() {
-          if (window.umaRosterSystem) {
-            return window.umaRosterSystem.getUmaRoster();
-          } else {
-            console.error('马娘记名册系统未初始化');
-            return {};
-          }
         }
 
         showRules() {
@@ -23263,12 +23219,12 @@
                         />
                       </svg>
                     </button>
-                    <!-- 马娘记名册按钮 -->
+                    <!-- 成就按钮（从底部移到此处，替换马娘记名册） -->
                     <button
-                      id="uma-roster-btn-inner"
+                      id="achievements-btn-inner"
                       class="profile-icon-btn"
-                      title="马娘记名册"
-                      onclick="window.teresenDebug.openUmaRoster()"
+                      title="成就"
+                      onclick="if(window.achievementSystem) window.achievementSystem.openAchievementModal()"
                       style="
                         background: linear-gradient(135deg, rgba(139, 69, 19, 0.15), rgba(139, 69, 19, 0.08));
                         border: 1px solid rgba(139, 69, 19, 0.3);
@@ -23289,7 +23245,7 @@
                     >
                       <svg class="icon" fill="currentColor" viewBox="0 0 20 20" style="width: 18px; height: 18px">
                         <path
-                          d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"
+                          d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
                         />
                       </svg>
                     </button>
@@ -24167,14 +24123,6 @@
                 fill-rule="evenodd"
                 d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
                 clip-rule="evenodd"
-              />
-            </svg>
-          </button>
-
-          <button id="achievements-btn" class="bottom-button" title="成就">
-            <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
               />
             </svg>
           </button>
@@ -31560,236 +31508,6 @@
       }
 
       // 马娘记名册系统
-      class UmaRosterSystem {
-        constructor() {
-          this.rosterKey = 'uma_roster';
-          this.init();
-        }
-
-        init() {
-          // 初始化记名册数据
-          if (!localStorage.getItem(this.rosterKey)) {
-            localStorage.setItem(this.rosterKey, JSON.stringify({}));
-          }
-        }
-
-        // 获取记名册数据
-        getUmaRoster() {
-          try {
-            const rosterData = localStorage.getItem(this.rosterKey);
-            return rosterData ? JSON.parse(rosterData) : {};
-          } catch (error) {
-            console.error('获取马娘记名册失败:', error);
-            return {};
-          }
-        }
-
-        // 添加马娘到记名册
-        addUmaToRoster(umaName, details = {}) {
-          try {
-            const roster = this.getUmaRoster();
-            const now = new Date().toISOString();
-
-            if (!roster[umaName]) {
-              roster[umaName] = {
-                name: umaName,
-                encounter_count: 1,
-                first_met: now,
-                last_met: now,
-                notes: details.notes || '',
-                personality: details.personality || '',
-                abilities: details.abilities || '',
-              };
-            } else {
-              roster[umaName].encounter_count += 1;
-              roster[umaName].last_met = now;
-              if (details.notes) roster[umaName].notes = details.notes;
-              if (details.personality) roster[umaName].personality = details.personality;
-              if (details.abilities) roster[umaName].abilities = details.abilities;
-            }
-
-            localStorage.setItem(this.rosterKey, JSON.stringify(roster));
-            console.log(`📖 已添加 ${umaName} 到马娘记名册`);
-            return true;
-          } catch (error) {
-            console.error('添加马娘到记名册失败:', error);
-            return false;
-          }
-        }
-
-        // 打开记名册界面
-        openUmaRoster() {
-          // 播放马娘记名册音效
-          const sound = document.getElementById('uma-roster-sound');
-          if (sound) {
-            sound.currentTime = 0;
-            sound.play().catch(e => console.log('播放马娘记名册音效失败:', e));
-          }
-
-          const roster = this.getUmaRoster();
-          const umaList = Object.values(roster);
-
-          let rosterHtml = `
-            <div class="roster-modal" id="roster-modal">
-              <div class="roster-content">
-                <div class="roster-header">
-                  <h2>📖 马娘记名册</h2>
-                  <button class="roster-close-btn" onclick="this.closest('.roster-modal').remove()">×</button>
-                </div>
-                <div class="roster-body">
-          `;
-
-          if (umaList.length === 0) {
-            rosterHtml += '<div class="empty-roster">还没有遇到任何马娘...</div>';
-          } else {
-            rosterHtml += '<div class="roster-list">';
-            umaList.forEach(uma => {
-              const firstMet = new Date(uma.first_met).toLocaleDateString('zh-CN');
-              const lastMet = new Date(uma.last_met).toLocaleDateString('zh-CN');
-
-              rosterHtml += `
-                <div class="roster-item">
-                  <div class="roster-item-header">
-                    <h3>${uma.name}</h3>
-                    <span class="encounter-count">遇到 ${uma.encounter_count} 次</span>
-                  </div>
-                  <div class="roster-item-details">
-                    <div class="roster-detail">
-                      <strong>首次遇到:</strong> ${firstMet}
-                    </div>
-                    <div class="roster-detail">
-                      <strong>最后遇到:</strong> ${lastMet}
-                    </div>
-                    ${uma.personality ? `<div class="roster-detail"><strong>性格:</strong> ${uma.personality}</div>` : ''}
-                    ${uma.abilities ? `<div class="roster-detail"><strong>能力:</strong> ${uma.abilities}</div>` : ''}
-                    ${uma.notes ? `<div class="roster-detail"><strong>备注:</strong> ${uma.notes}</div>` : ''}
-                  </div>
-                </div>
-              `;
-            });
-            rosterHtml += '</div>';
-          }
-
-          rosterHtml += `
-                </div>
-              </div>
-            </div>
-          `;
-
-          // 移除现有的记名册弹窗
-          $('.roster-modal').remove();
-
-          // 🔥 添加新的记名册弹窗（全屏时添加到覆盖层内部）
-          const overlay = document.getElementById('teresen-fullscreen-overlay');
-          if (overlay) {
-            overlay.insertAdjacentHTML('beforeend', rosterHtml);
-          } else {
-            $('body').append(rosterHtml);
-          }
-        }
-
-        // 新增：状态触发系统
-        checkStatusTriggers() {
-          try {
-            // 防止重复触发
-            if (this.statusAnimationActive) {
-              console.log('🎭 状态动画已激活，跳过检查');
-              return;
-            }
-
-            const variables = this.getAllVariables();
-            const trainer = variables?.stat_data?.训练员;
-
-            if (!trainer) return;
-
-            const stamina = trainer.体力 || 0;
-            const sanity = trainer.理智 || 0;
-
-            console.log('🎭 检查状态触发 - 体力:', stamina, '理智:', sanity);
-
-            // 检查是否需要触发状态判定
-            if (stamina <= 0 || sanity <= 0) {
-              console.log('🎭 触发状态动画 - 体力:', stamina, '理智:', sanity);
-              this.triggerStatusAnimation(stamina, sanity);
-            }
-          } catch (error) {
-            console.warn('状态触发检查失败:', error);
-          }
-        }
-
-        // 新增：状态动画演出
-        triggerStatusAnimation(stamina, sanity) {
-          console.log('🎭 触发状态动画演出');
-
-          // 设置状态标志，防止重复触发
-          this.statusAnimationActive = true;
-
-          // 判断状态类型
-          let statusType = 'normal';
-          let statusTitle = '状态变化';
-          let statusMessage = 'AI将为你判定新的状态...';
-
-          if (stamina <= 0 && sanity <= 0) {
-            statusType = 'critical';
-            statusTitle = '⚠️ 双重崩溃';
-            statusMessage = '体力与理智同时崩溃！AI将判定你的命运...';
-          } else if (stamina <= 0) {
-            statusType = 'stamina';
-            statusTitle = '💪 体力崩溃';
-            statusMessage = '体力耗尽！这是考验意志的时刻...';
-          } else if (sanity <= 0) {
-            statusType = 'sanity';
-            statusTitle = '🧠 理智崩溃';
-            statusMessage = '理智崩溃！疯狂中蕴含着力量...';
-          }
-
-          // 创建状态动画容器
-          const animationContainer = document.createElement('div');
-          animationContainer.className = `status-animation-container ${statusType}`;
-          animationContainer.innerHTML = `
-            <div class="status-animation">
-              <div class="status-title">${statusTitle}</div>
-              <div class="status-content">
-                ${stamina <= 0 ? `<div class="status-item stamina">体力: ${stamina}</div>` : ''}
-                ${sanity <= 0 ? `<div class="status-item sanity">理智: ${sanity}</div>` : ''}
-              </div>
-              <div class="status-message">${statusMessage}</div>
-              <div class="status-hint">等待AI的判定...</div>
-            </div>
-          `;
-
-          // 添加到页面
-          document.body.appendChild(animationContainer);
-
-          // 播放动画
-          setTimeout(() => {
-            animationContainer.classList.add('show');
-          }, 100);
-
-          // 5秒后自动移除
-          setTimeout(() => {
-            animationContainer.classList.remove('show');
-            setTimeout(() => {
-              if (animationContainer.parentNode) {
-                animationContainer.parentNode.removeChild(animationContainer);
-              }
-              // 重置状态标志
-              this.statusAnimationActive = false;
-            }, 500);
-          }, 5000);
-        }
-
-        // 已删除重复的塔罗占卜系统
-      }
-
-      // 初始化马娘记名册系统
-      $(document).ready(function () {
-        // 延迟初始化，确保DOM完全加载
-        setTimeout(() => {
-          window.umaRosterSystem = new UmaRosterSystem();
-          console.log('📖 马娘记名册系统初始化完成');
-        }, 100);
-      });
 
       // 初始化塔罗占卜系统
       $(document).ready(function () {
@@ -33777,7 +33495,9 @@
         }
 
         bindEvents() {
+          // 🔥 成就按钮已移到个人档案区域，绑定新按钮
           $(document).on('click', '#achievements-btn', () => this.openAchievementModal());
+          $(document).on('click', '#achievements-btn-inner', () => this.openAchievementModal());
           $(document).on('click', '#close-achievement-btn', () => this.closeAchievementModal());
           $(document).on('click', '#close-achievement-detail-btn', () => this.closeAchievementDetailModal());
           $(document).on('click', '.achievement-card', e => {
@@ -33870,8 +33590,10 @@
         }
 
         showAchievementNotification(achievement) {
+          // 🔥 生成唯一ID，避免重复
+          const notificationId = `achievement-notification-${Date.now()}`;
           const notification = $(`
-              <div class="achievement-notification" style="
+              <div class="achievement-notification" id="${notificationId}" style="
                 position: fixed;
                 top: 20px;
                 right: 20px;
@@ -33884,20 +33606,48 @@
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                max-width: 350px;
+                max-width: 400px;
                 animation: slideInRight 0.5s ease-out;
+                border: 2px solid rgba(212, 175, 55, 0.5);
               ">
-                <div style="font-size: 2em;">${achievement.icon}</div>
-                <div>
-                  <div style="font-weight: bold; margin-bottom: 4px;">🏆 成就达成！</div>
-                  <div style="font-size: 1.1em; margin-bottom: 2px;">${achievement.name}</div>
-                  <div style="font-size: 0.9em; opacity: 0.9;">${achievement.completionText}</div>
+                <div style="font-size: 2em; flex-shrink: 0;">${achievement.icon}</div>
+                <div style="flex: 1;">
+                  <div style="font-weight: bold; margin-bottom: 4px; font-size: 1.1em;">🏆 成就达成！</div>
+                  <div style="font-size: 1.2em; margin-bottom: 2px; font-weight: 600;">${achievement.name}</div>
+                  <div style="font-size: 0.95em; opacity: 0.9;">${achievement.completionText}</div>
                 </div>
+                <button class="achievement-notification-close" style="
+                  background: rgba(44, 24, 16, 0.2);
+                  border: none;
+                  border-radius: 50%;
+                  width: 28px;
+                  height: 28px;
+                  color: #2c1810;
+                  font-size: 18px;
+                  font-weight: bold;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                  transition: all 0.2s;
+                  line-height: 1;
+                " onmouseover="this.style.background='rgba(44, 24, 16, 0.4)'" onmouseout="this.style.background='rgba(44, 24, 16, 0.2)'">×</button>
               </div>
             `);
 
+          // 🔥 绑定关闭按钮事件
+          notification.find('.achievement-notification-close').on('click', () => {
+            notification.fadeOut(300, () => notification.remove());
+          });
+
           $('body').append(notification);
-          setTimeout(() => notification.fadeOut(500, () => notification.remove()), 4000);
+
+          // 🔥 不再自动关闭，需要用户手动点击关闭按钮
+          // 但可以添加一个闪烁提示，让用户注意到需要关闭
+          setTimeout(() => {
+            notification.css('animation', 'pulse 1s ease-in-out 3');
+          }, 500);
         }
 
         openAchievementModal() {
