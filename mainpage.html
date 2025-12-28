@@ -6420,12 +6420,14 @@
               }
 
               return {
+                id: msg.id || `msg_${index}_${Date.now()}`, // 🔥 保存原始消息ID，用于编辑和删除
                 type: msg.role === 'user' ? 'user' : 'ai',
                 timestamp: msg.timestamp || Date.now() - (chatHistory.length - index) * 1000,
                 send_date: msg.timestamp ? new Date(msg.timestamp).toLocaleString('zh-CN') : `消息 #${index + 1}`,
                 content: displayContent,
-                message: msg.content || '',
+                message: msg.content || '', // 保存原始完整消息（包含标签）
                 data: msg.variableState || msg.data || null,
+                originalIndex: index, // 保存原始索引，方便定位
               };
             });
 
@@ -6607,6 +6609,33 @@
             await this.exportChatHistory(chatHistory);
           });
 
+          // 🔥 绑定编辑和删除按钮事件（参考分析2.js）
+          contentArea.addEventListener('click', async e => {
+            const btn = e.target.closest('.msg-btn');
+            if (!btn) return;
+
+            const messageId = btn.getAttribute('data-message-id');
+            const messageItem = contentArea.querySelector(`[data-message-id="${messageId}"]`);
+            if (!messageItem) return;
+
+            if (btn.classList.contains('edit-btn')) {
+              // 编辑消息
+              await this.handleEditMessage(messageId, messageItem, chatHistory);
+            } else if (btn.classList.contains('delete-btn')) {
+              // 删除消息
+              await this.handleDeleteMessage(messageId, chatHistory, modal);
+            } else if (btn.classList.contains('save-btn')) {
+              // 保存编辑
+              const textarea = messageItem.querySelector('.edit-textarea');
+              if (textarea) {
+                await this.updateMessageInHistory(messageId, textarea.value, chatHistory, modal);
+              }
+            } else if (btn.classList.contains('cancel-btn')) {
+              // 取消编辑
+              await this.refreshChatHistoryViewer(modal, chatHistory);
+            }
+          });
+
           // 按钮悬停效果
           [scrollTopBtn, scrollBottomBtn, exportBtn].forEach(btn => {
             btn.addEventListener('mouseenter', () => {
@@ -6666,21 +6695,49 @@
 
             displayCount++;
 
+            // 🔥 生成消息唯一ID（用于编辑和删除）
+            const messageId = msg.id || `msg_${index}_${Date.now()}`;
+
             if (isUser) {
               html += `
-                <div style="
+                <div class="chat-message-item" data-message-id="${messageId}" style="
                   margin-bottom: 15px;
                   padding: 12px;
                   background: rgba(100, 149, 237, 0.1);
                   border-left: 4px solid #6495ED;
                   border-radius: 4px;
                   animation: fadeIn 0.3s ease-in;
+                  position: relative;
                 ">
-                  <div style="color: #6495ED; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between;">
+                  <div style="color: #6495ED; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
                     <span>🎮 玩家</span>
-                    <span style="font-size: 0.85em; opacity: 0.8;">${time}</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 0.85em; opacity: 0.8;">${time}</span>
+                      <div class="message-actions" style="display: flex; gap: 4px;">
+                        <button class="msg-btn edit-btn" title="编辑" data-message-id="${messageId}" style="
+                          background: rgba(100, 149, 237, 0.2);
+                          border: none;
+                          color: #6495ED;
+                          padding: 4px 8px;
+                          border-radius: 3px;
+                          cursor: pointer;
+                          font-size: 0.9em;
+                          transition: all 0.2s;
+                        " onmouseover="this.style.background='rgba(100, 149, 237, 0.4)'" onmouseout="this.style.background='rgba(100, 149, 237, 0.2)'">✏️</button>
+                        <button class="msg-btn delete-btn" title="删除" data-message-id="${messageId}" style="
+                          background: rgba(220, 53, 69, 0.2);
+                          border: none;
+                          color: #dc3545;
+                          padding: 4px 8px;
+                          border-radius: 3px;
+                          cursor: pointer;
+                          font-size: 0.9em;
+                          transition: all 0.2s;
+                        " onmouseover="this.style.background='rgba(220, 53, 69, 0.4)'" onmouseout="this.style.background='rgba(220, 53, 69, 0.2)'">🗑️</button>
+                      </div>
+                    </div>
                   </div>
-                  <div style="color: #2d1810; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; font-weight: 500;">
+                  <div class="message-content" style="color: #2d1810; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; font-weight: 500;">
                     ${this.escapeHtml(content)}
                   </div>
                 </div>
@@ -6688,19 +6745,44 @@
               displayCount++;
             } else if (isAI) {
               html += `
-                <div style="
+                <div class="chat-message-item" data-message-id="${messageId}" style="
                   margin-bottom: 15px;
                   padding: 12px;
                   background: rgba(255, 165, 0, 0.1);
                   border-left: 4px solid #FFA500;
                   border-radius: 4px;
                   animation: fadeIn 0.3s ease-in;
+                  position: relative;
                 ">
-                  <div style="color: #FFA500; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between;">
+                  <div style="color: #FFA500; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
                     <span>🤖 AI助手</span>
-                    <span style="font-size: 0.85em; opacity: 0.8;">${time}</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 0.85em; opacity: 0.8;">${time}</span>
+                      <div class="message-actions" style="display: flex; gap: 4px;">
+                        <button class="msg-btn edit-btn" title="编辑" data-message-id="${messageId}" style="
+                          background: rgba(255, 165, 0, 0.2);
+                          border: none;
+                          color: #FF8C00;
+                          padding: 4px 8px;
+                          border-radius: 3px;
+                          cursor: pointer;
+                          font-size: 0.9em;
+                          transition: all 0.2s;
+                        " onmouseover="this.style.background='rgba(255, 165, 0, 0.4)'" onmouseout="this.style.background='rgba(255, 165, 0, 0.2)'">✏️</button>
+                        <button class="msg-btn delete-btn" title="删除" data-message-id="${messageId}" style="
+                          background: rgba(220, 53, 69, 0.2);
+                          border: none;
+                          color: #dc3545;
+                          padding: 4px 8px;
+                          border-radius: 3px;
+                          cursor: pointer;
+                          font-size: 0.9em;
+                          transition: all 0.2s;
+                        " onmouseover="this.style.background='rgba(220, 53, 69, 0.4)'" onmouseout="this.style.background='rgba(220, 53, 69, 0.2)'">🗑️</button>
+                      </div>
+                    </div>
                   </div>
-                  <div style="color: #2d1810; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; font-weight: 500;">
+                  <div class="message-content" style="color: #2d1810; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; font-weight: 500;">
                     ${this.escapeHtml(content)}
                   </div>
                 </div>
@@ -6739,6 +6821,241 @@
           const div = document.createElement('div');
           div.textContent = text;
           return div.innerHTML;
+        }
+
+        /**
+         * 🔥 编辑消息（参考分析2.js的handleEdit）
+         * @param {string} messageId - 消息ID
+         * @param {HTMLElement} messageItem - 消息DOM元素
+         * @param {Array} chatHistory - 聊天历史数组
+         */
+        async handleEditMessage(messageId, messageItem, chatHistory) {
+          try {
+            // 查找消息
+            const msg = chatHistory.find(m => m.id === messageId);
+            if (!msg) {
+              console.warn('⚠️ 找不到消息:', messageId);
+              return;
+            }
+
+            // 获取原始消息内容（包含标签）
+            const originalContent = msg.message || msg.content || '';
+            const messageContent = messageItem.querySelector('.message-content');
+            const messageActions = messageItem.querySelector('.message-actions');
+
+            if (!messageContent || !messageActions) return;
+
+            // 切换到编辑模式
+            messageContent.innerHTML = `<textarea class="edit-textarea" style="
+              width: 100%;
+              min-height: 100px;
+              padding: 8px;
+              border: 1px solid rgba(139, 105, 20, 0.3);
+              border-radius: 4px;
+              background: rgba(255, 255, 255, 0.9);
+              color: #2d1810;
+              font-size: 0.9em;
+              line-height: 1.5;
+              resize: vertical;
+              font-family: inherit;
+            ">${this.escapeHtml(originalContent)}</textarea>`;
+
+            messageActions.innerHTML = `
+              <button class="msg-btn save-btn" title="保存" data-message-id="${messageId}" style="
+                background: rgba(40, 167, 69, 0.2);
+                border: none;
+                color: #28a745;
+                padding: 4px 8px;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 0.9em;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='rgba(40, 167, 69, 0.4)'" onmouseout="this.style.background='rgba(40, 167, 69, 0.2)'">✔️</button>
+              <button class="msg-btn cancel-btn" title="取消" data-message-id="${messageId}" style="
+                background: rgba(220, 53, 69, 0.2);
+                border: none;
+                color: #dc3545;
+                padding: 4px 8px;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 0.9em;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='rgba(220, 53, 69, 0.4)'" onmouseout="this.style.background='rgba(220, 53, 69, 0.2)'">❌</button>
+            `;
+
+            messageItem.classList.add('is-editing');
+
+            // 自动调整textarea高度
+            const textarea = messageContent.querySelector('.edit-textarea');
+            if (textarea) {
+              this._autoResizeTextarea(textarea);
+              textarea.focus();
+              textarea.addEventListener('input', () => this._autoResizeTextarea(textarea));
+            }
+          } catch (error) {
+            console.error('❌ 编辑消息失败:', error);
+          }
+        }
+
+        /**
+         * 🔥 自动调整textarea高度（参考分析2.js的_autoResizeTextarea）
+         * @param {HTMLTextAreaElement} textarea - textarea元素
+         */
+        _autoResizeTextarea(textarea) {
+          textarea.style.height = 'auto';
+          textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+
+        /**
+         * 🔥 删除消息（参考分析2.js的handleDelete）
+         * @param {string} messageId - 消息ID
+         * @param {Array} chatHistory - 聊天历史数组
+         * @param {HTMLElement} modal - 模态框元素
+         */
+        async handleDeleteMessage(messageId, chatHistory, modal) {
+          try {
+            if (!confirm('确定要删除这条消息吗？')) {
+              return;
+            }
+
+            // 从extra.teresen_chat加载完整历史
+            const fullHistory = await this.loadChatHistoryFromExtra();
+
+            // 删除指定消息
+            const updatedHistory = fullHistory.filter(msg => msg.id !== messageId);
+
+            // 保存更新后的历史
+            await this.saveChatHistoryToExtra(updatedHistory, null);
+
+            // 重新加载并刷新查看器
+            const newHistory = await this.loadChatHistoryFromExtra();
+            if (newHistory && newHistory.length > 0) {
+              // 转换格式
+              const formattedHistory = newHistory.map((msg, index) => {
+                let displayContent = msg.content || '';
+                const contentMatch = displayContent.match(/<content>(.*?)<\/content>/s);
+                if (contentMatch) {
+                  displayContent = contentMatch[1].trim();
+                }
+
+                return {
+                  id: msg.id || `msg_${index}_${Date.now()}`,
+                  type: msg.role === 'user' ? 'user' : 'ai',
+                  timestamp: msg.timestamp || Date.now() - (newHistory.length - index) * 1000,
+                  send_date: msg.timestamp ? new Date(msg.timestamp).toLocaleString('zh-CN') : `消息 #${index + 1}`,
+                  content: displayContent,
+                  message: msg.content || '',
+                  data: msg.variableState || msg.data || null,
+                  originalIndex: index,
+                };
+              });
+
+              // 刷新查看器
+              const contentArea = modal.querySelector('#chat-history-content');
+              if (contentArea) {
+                contentArea.innerHTML = this.formatChatHistory(formattedHistory);
+
+                // 滚动到底部
+                setTimeout(() => {
+                  contentArea.scrollTo({ top: contentArea.scrollHeight, behavior: 'smooth' });
+                }, 100);
+              }
+            } else {
+              // 如果没有消息了，关闭查看器
+              modal.remove();
+              await this.showCustomAlert('已删除所有消息');
+            }
+
+            console.log('✅ 消息已删除');
+          } catch (error) {
+            console.error('❌ 删除消息失败:', error);
+            await this.showCustomAlert('删除消息失败: ' + error.message);
+          }
+        }
+
+        /**
+         * 🔥 更新消息（参考分析2.js的updateMessage）
+         * @param {string} messageId - 消息ID
+         * @param {string} newContent - 新内容
+         * @param {Array} chatHistory - 聊天历史数组
+         * @param {HTMLElement} modal - 模态框元素
+         */
+        async updateMessageInHistory(messageId, newContent, chatHistory, modal) {
+          try {
+            // 从extra.teresen_chat加载完整历史
+            const fullHistory = await this.loadChatHistoryFromExtra();
+
+            // 找到要更新的消息
+            const messageIndex = fullHistory.findIndex(msg => msg.id === messageId);
+            if (messageIndex === -1) {
+              console.warn('⚠️ 找不到要更新的消息:', messageId);
+              return;
+            }
+
+            // 更新消息内容
+            fullHistory[messageIndex].content = newContent.trim();
+
+            // 保存更新后的历史
+            await this.saveChatHistoryToExtra(fullHistory, null);
+
+            // 刷新查看器
+            await this.refreshChatHistoryViewer(modal, chatHistory);
+
+            console.log('✅ 消息已更新');
+          } catch (error) {
+            console.error('❌ 更新消息失败:', error);
+            await this.showCustomAlert('更新消息失败: ' + error.message);
+          }
+        }
+
+        /**
+         * 🔥 刷新聊天记录查看器
+         * @param {HTMLElement} modal - 模态框元素
+         * @param {Array} originalChatHistory - 原始聊天历史数组（用于保留格式）
+         */
+        async refreshChatHistoryViewer(modal, originalChatHistory) {
+          try {
+            // 从extra.teresen_chat重新加载
+            const newHistory = await this.loadChatHistoryFromExtra();
+            if (!newHistory || newHistory.length === 0) {
+              modal.remove();
+              await this.showCustomAlert('没有聊天记录了');
+              return;
+            }
+
+            // 转换格式
+            const formattedHistory = newHistory.map((msg, index) => {
+              let displayContent = msg.content || '';
+              const contentMatch = displayContent.match(/<content>(.*?)<\/content>/s);
+              if (contentMatch) {
+                displayContent = contentMatch[1].trim();
+              }
+
+              return {
+                id: msg.id || `msg_${index}_${Date.now()}`,
+                type: msg.role === 'user' ? 'user' : 'ai',
+                timestamp: msg.timestamp || Date.now() - (newHistory.length - index) * 1000,
+                send_date: msg.timestamp ? new Date(msg.timestamp).toLocaleString('zh-CN') : `消息 #${index + 1}`,
+                content: displayContent,
+                message: msg.content || '',
+                data: msg.variableState || msg.data || null,
+                originalIndex: index,
+              };
+            });
+
+            // 更新内容
+            const contentArea = modal.querySelector('#chat-history-content');
+            if (contentArea) {
+              contentArea.innerHTML = this.formatChatHistory(formattedHistory);
+
+              // 滚动到之前的位置（如果可能）
+              setTimeout(() => {
+                contentArea.scrollTo({ top: contentArea.scrollHeight, behavior: 'smooth' });
+              }, 100);
+            }
+          } catch (error) {
+            console.error('❌ 刷新查看器失败:', error);
+          }
         }
 
         // 搜索聊天历史功能
