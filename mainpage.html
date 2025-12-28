@@ -2216,8 +2216,19 @@
               this.updateActionOptionsFromContent('');
             }
 
+            // 🔥 提取UpdateVariable标签内容（支持流式更新中的不完整标签）
+            let variableUpdateText = '';
+            const variableMatches = [...fullText.matchAll(/<UpdateVariable>([\s\S]*?)(?:<\/UpdateVariable>|$)/g)];
+            if (variableMatches.length > 0) {
+              // 取最后一个匹配（最新的UpdateVariable）
+              const lastMatch = variableMatches[variableMatches.length - 1];
+              variableUpdateText = lastMatch[1].trim();
+            }
+
             // 🔥 更新变量更新装饰（在流式更新时也显示）
-            this.updateVariableDecoration(variableUpdateText);
+            if (variableUpdateText) {
+              this.updateVariableDecoration(variableUpdateText, true); // true表示正在流式传输
+            }
           } catch (e) {
             console.error('流式更新执行失败:', e);
           }
@@ -2319,8 +2330,8 @@
                 const updateScript = variableMatch[1].trim();
                 console.log('📊 检测到变量更新:', updateScript);
 
-                // 🔥 显示变量更新装饰
-                this.updateVariableDecoration(updateScript);
+                // 🔥 显示变量更新装饰（生成结束时，isStreaming=false）
+                this.updateVariableDecoration(updateScript, false);
 
                 // 调用MVU更新变量
                 if (this.currentMvuState && updateScript) {
@@ -3678,14 +3689,19 @@
         }
 
         // 🔥 更新变量更新装饰显示
-        updateVariableDecoration(updateScript) {
+        /**
+         * 🔥 更新变量更新装饰（支持流式传输实时显示）
+         * @param {string} updateScript - 变量更新脚本内容
+         * @param {boolean} isStreaming - 是否正在流式传输
+         */
+        updateVariableDecoration(updateScript, isStreaming = false) {
           const decoration = document.getElementById('variable-update-decoration');
           const textElement = document.getElementById('variable-update-text');
 
           if (!decoration || !textElement) return;
 
           // 检查是否正在生成中
-          const isGenerating = document.querySelector('.generating-indicator')?.style.display !== 'none';
+          const isGenerating = isStreaming || document.querySelector('.generating-indicator')?.style.display !== 'none';
 
           if (!updateScript || !updateScript.trim()) {
             // 没有变量更新，隐藏装饰
@@ -3694,33 +3710,355 @@
             return;
           }
 
-          // 解析变量更新脚本，提取变量变化信息
-          // 格式可能是：训练员.理智 = 50 或 训练员.理智 += 10 等
-          let displayText = '';
+          // 🔥 解析变量更新脚本，提取所有变量变化信息（支持JSON Patch格式）
+          // 支持格式：
+          // - JSON Patch (RFC 6902): <JSONPatch>[{ "op": "...", "path": "...", "value": ... }]</JSONPatch>
+          // - 兼容旧格式：_.set, _.add, _.assign, _.remove 或传统赋值
+          let displayItems = [];
 
-          // 尝试提取变量名和值的变化
-          const assignmentMatch = updateScript.match(/([\w\u4e00-\u9fa5.\[\]]+)\s*([+\-*/]?=)\s*([\d.]+)/);
-          if (assignmentMatch) {
-            const varName = assignmentMatch[1].replace(/\[0\]/g, '').replace(/\./g, '·');
-            const operator = assignmentMatch[2];
-            const value = assignmentMatch[3];
+          // 1. 🔥 优先解析 JSON Patch 格式（新格式，支持流式传输中的不完整JSON）
+          const jsonPatchMatch = updateScript.match(/<JSONPatch>([\s\S]*?)(?:<\/JSONPatch>|$)/i);
+          if (jsonPatchMatch) {
+            try {
+              let jsonPatchText = jsonPatchMatch[1].trim();
 
-            if (operator === '=') {
-              displayText = `${varName} = ${value}`;
-            } else if (operator === '+=') {
-              displayText = `${varName} +${value}`;
-            } else if (operator === '-=') {
-              displayText = `${varName} -${value}`;
-            } else {
-              displayText = `${varName} ${operator} ${value}`;
+              // 🔥 流式传输时可能JSON不完整，尝试修复或提取部分内容
+              if (isStreaming && !jsonPatchText.endsWith(']')) {
+                // 如果JSON不完整，尝试提取已完成的patch操作
+                // 查找所有完整的patch对象（以}结尾的）
+                const patchMatches = jsonPatchText.match(/\{[^}]*"op"\s*:\s*["']([^"']+)["'][^}]*\}/g);
+                if (patchMatches && patchMatches.length > 0) {
+                  // 尝试解析每个完整的patch对象
+                  for (const patchStr of patchMatches) {
+                    try {
+                      const patch = JSON.parse(patchStr);
+                      if (patch.op && patch.path) {
+                        const path = patch.path.replace(/^\//, '').replace(/\//g, '·').replace(/\[0\]/g, '');
+                        let displayText = '';
+
+                        switch (patch.op) {
+                          case 'replace':
+                            const valueStr =
+                              typeof patch.value === 'object'
+                                ? JSON.stringify(patch.value).substring(0, 30)
+                                : String(patch.value);
+                            displayText = `${path} = ${valueStr}`;
+                            break;
+                          case 'add':
+                            const addValueStr =
+                              typeof patch.value === 'object'
+                                ? JSON.stringify(patch.value).substring(0, 30)
+                                : String(patch.value);
+                            if (patch.path.endsWith('/-')) {
+                              const arrayPath = path.replace(/\/-$/, '');
+                              displayText = `${arrayPath} 添加 ${addValueStr}`;
+                            } else {
+                              displayText = `${path} 添加 ${addValueStr}`;
+                            }
+                            break;
+                          case 'remove':
+                            displayText = `${path} 移除`;
+                            break;
+                          case 'move':
+                            const fromPath = (patch.from || '')
+                              .replace(/^\//, '')
+                              .replace(/\//g, '·')
+                              .replace(/\[0\]/g, '');
+                            displayText = `${fromPath} → ${path}`;
+                            break;
+                          case 'copy':
+                            const copyFromPath = (patch.from || '')
+                              .replace(/^\//, '')
+                              .replace(/\//g, '·')
+                              .replace(/\[0\]/g, '');
+                            displayText = `${copyFromPath} 复制到 ${path}`;
+                            break;
+                          case 'test':
+                            displayText = `${path} 测试`;
+                            break;
+                          default:
+                            displayText = `${path} ${patch.op}`;
+                        }
+
+                        if (displayText) {
+                          displayItems.push(displayText);
+                        }
+                      }
+                    } catch (e) {
+                      // 单个patch解析失败，继续下一个
+                    }
+                  }
+
+                  if (displayItems.length > 0) {
+                    // 如果成功提取了部分内容，添加"正在生成..."提示
+                    displayItems.push('正在生成...');
+                  }
+                }
+              } else {
+                // JSON完整，正常解析
+                // 确保是有效的JSON数组格式
+                if (!jsonPatchText.startsWith('[')) {
+                  jsonPatchText = '[' + jsonPatchText;
+                }
+                if (!jsonPatchText.endsWith(']')) {
+                  jsonPatchText = jsonPatchText + ']';
+                }
+
+                const patchArray = JSON.parse(jsonPatchText);
+
+                if (Array.isArray(patchArray)) {
+                  for (const patch of patchArray) {
+                    if (!patch.op || !patch.path) continue;
+
+                    const path = patch.path.replace(/^\//, '').replace(/\//g, '·').replace(/\[0\]/g, '');
+                    let displayText = '';
+
+                    switch (patch.op) {
+                      case 'replace':
+                        const valueStr =
+                          typeof patch.value === 'object'
+                            ? JSON.stringify(patch.value).substring(0, 30)
+                            : String(patch.value);
+                        displayText = `${path} = ${valueStr}`;
+                        break;
+                      case 'add':
+                        const addValueStr =
+                          typeof patch.value === 'object'
+                            ? JSON.stringify(patch.value).substring(0, 30)
+                            : String(patch.value);
+                        if (patch.path.endsWith('/-')) {
+                          const arrayPath = path.replace(/\/-$/, '');
+                          displayText = `${arrayPath} 添加 ${addValueStr}`;
+                        } else {
+                          displayText = `${path} 添加 ${addValueStr}`;
+                        }
+                        break;
+                      case 'remove':
+                        displayText = `${path} 移除`;
+                        break;
+                      case 'move':
+                        const fromPath = (patch.from || '')
+                          .replace(/^\//, '')
+                          .replace(/\//g, '·')
+                          .replace(/\[0\]/g, '');
+                        displayText = `${fromPath} → ${path}`;
+                        break;
+                      case 'copy':
+                        const copyFromPath = (patch.from || '')
+                          .replace(/^\//, '')
+                          .replace(/\//g, '·')
+                          .replace(/\[0\]/g, '');
+                        displayText = `${copyFromPath} 复制到 ${path}`;
+                        break;
+                      case 'test':
+                        displayText = `${path} 测试`;
+                        break;
+                      default:
+                        displayText = `${path} ${patch.op}`;
+                    }
+
+                    if (displayText) {
+                      displayItems.push(displayText);
+                    }
+                  }
+                }
+              }
+            } catch (parseError) {
+              // 如果JSON解析失败，尝试提取部分信息
+              if (isStreaming) {
+                // 流式传输时，尝试提取已出现的patch操作
+                const opMatch = updateScript.match(/"op"\s*:\s*["']([^"']+)["']/);
+                const pathMatch = updateScript.match(/"path"\s*:\s*["']([^"']+)["']/);
+                if (opMatch && pathMatch) {
+                  const op = opMatch[1];
+                  const path = pathMatch[1].replace(/^\//, '').replace(/\//g, '·').replace(/\[0\]/g, '');
+                  displayItems.push(`${path} ${op} 正在生成...`);
+                }
+              }
+              // 如果完全无法解析，继续尝试其他格式
             }
+          }
+
+          // 2. 如果没找到JSON Patch，尝试解析 MVU 命令格式（兼容旧格式）
+          if (displayItems.length === 0) {
+            const mvuCommands = [
+              { pattern: /_\.set\(['"]([^'"]+)['"],\s*([^)]+)\)/g, name: 'set', op: '=' },
+              { pattern: /_\.add\(['"]([^'"]+)['"],\s*([^)]+)\)/g, name: 'add', op: '+' },
+              { pattern: /_\.assign\(['"]([^'"]+)['"],\s*([^)]+)\)/g, name: 'assign', op: '=' },
+              { pattern: /_\.remove\(['"]([^'"]+)['"]\)/g, name: 'remove', op: '-' },
+            ];
+
+            for (const cmd of mvuCommands) {
+              let match;
+              while ((match = cmd.pattern.exec(updateScript)) !== null) {
+                const varPath = match[1].replace(/\[0\]/g, '').replace(/\./g, '·');
+                const value = match[2] || '';
+                if (cmd.name === 'remove') {
+                  displayItems.push(`${varPath} 移除`);
+                } else if (cmd.name === 'add') {
+                  displayItems.push(`${varPath} +${value.trim()}`);
+                } else {
+                  displayItems.push(`${varPath} = ${value.trim()}`);
+                }
+              }
+            }
+          }
+
+          // 3. 如果还是没找到，尝试解析传统赋值格式（兼容旧格式）
+          if (displayItems.length === 0) {
+            const assignmentPattern = /([\w\u4e00-\u9fa5.\[\]]+)\s*([+\-*/]?=)\s*([^\n;]+)/g;
+            let match;
+            while ((match = assignmentPattern.exec(updateScript)) !== null) {
+              const varPath = match[1].replace(/\[0\]/g, '').replace(/\./g, '·');
+              const operator = match[2];
+              const value = match[3].trim().replace(/;$/, '');
+
+              if (operator === '=') {
+                displayItems.push(`${varPath} = ${value}`);
+              } else if (operator === '+=') {
+                displayItems.push(`${varPath} +${value}`);
+              } else if (operator === '-=') {
+                displayItems.push(`${varPath} -${value}`);
+              } else {
+                displayItems.push(`${varPath} ${operator} ${value}`);
+              }
+            }
+          }
+
+          // 3. 如果还是没找到，显示简化版本（支持流式传输中的不完整内容）
+          if (displayItems.length === 0) {
+            // 尝试提取变量路径（即使值还没完整）
+            const partialMatch = updateScript.match(/([\w\u4e00-\u9fa5.\[\]]+)\s*([+\-*/]?=)\s*/);
+            if (partialMatch) {
+              const varPath = partialMatch[1].replace(/\[0\]/g, '').replace(/\./g, '·');
+              const operator = partialMatch[2];
+              if (isStreaming) {
+                displayItems.push(`${varPath} ${operator} 正在生成...`);
+              } else {
+                displayItems.push(`${varPath} ${operator} 更新中`);
+              }
+            } else {
+              // 最后的备选方案
+              const preview = updateScript.length > 60 ? updateScript.substring(0, 60) + '...' : updateScript;
+              displayItems.push(isStreaming ? `${preview} 正在生成...` : preview);
+            }
+          }
+
+          // 🔥 如果只有一个项目，直接显示；多个项目则使用可展开列表
+          if (displayItems.length === 0) {
+            decoration.style.display = 'none';
+            decoration.classList.remove('updating');
+            return;
+          }
+
+          // 检查是否有展开/折叠按钮和列表容器
+          let expandBtn = decoration.querySelector('.variable-update-expand-btn');
+          let listContainer = decoration.querySelector('.variable-update-list');
+          let summaryText = decoration.querySelector('.variable-update-summary');
+
+          // 获取容器（textElement的父div，包含flex布局的那个）
+          const containerDiv = textElement.parentElement;
+
+          if (displayItems.length === 1) {
+            // 只有一个项目，直接显示
+            textElement.textContent = displayItems[0];
+            textElement.style.display = 'block';
+
+            // 隐藏展开按钮和列表（如果存在）
+            if (expandBtn) expandBtn.style.display = 'none';
+            if (listContainer) listContainer.style.display = 'none';
+
+            decoration.style.display = 'block';
           } else {
-            // 如果无法解析，显示简化版本
-            displayText = updateScript.length > 50 ? updateScript.substring(0, 50) + '...' : updateScript;
+            // 多个项目，使用可展开列表
+            // 先隐藏textElement
+            textElement.style.display = 'none';
+
+            // 创建或获取summary元素（替换原来的textElement位置）
+            if (!summaryText) {
+              summaryText = document.createElement('div');
+              summaryText.className = 'variable-update-summary';
+              summaryText.style.cssText =
+                'display: flex; align-items: center; gap: 8px; cursor: pointer; color: #8b4513; font-size: 0.85em; font-weight: 500; font-style: italic;';
+              containerDiv.insertBefore(summaryText, textElement);
+            } else {
+              summaryText.style.display = 'flex';
+            }
+
+            // 创建或获取展开按钮
+            if (!expandBtn) {
+              expandBtn = document.createElement('span');
+              expandBtn.className = 'variable-update-expand-btn';
+              expandBtn.innerHTML = '▼';
+              expandBtn.style.cssText =
+                'font-size: 0.8em; transition: transform 0.2s; user-select: none; flex-shrink: 0;';
+              summaryText.appendChild(expandBtn);
+            }
+            expandBtn.style.display = 'inline-block';
+
+            // 创建summary文本部分
+            let summaryTextPart = summaryText.querySelector('.variable-update-summary-text');
+            if (!summaryTextPart) {
+              summaryTextPart = document.createElement('span');
+              summaryTextPart.className = 'variable-update-summary-text';
+              summaryTextPart.style.flex = '1';
+              summaryText.appendChild(summaryTextPart);
+            }
+
+            const isExpanded = decoration.classList.contains('expanded');
+            const summaryDisplay = `${displayItems.length} 项变量更新${isStreaming ? ' 正在生成...' : ''}`;
+            summaryTextPart.textContent = summaryDisplay;
+
+            // 创建或获取列表容器（放在decoration内部，containerDiv之后）
+            if (!listContainer) {
+              listContainer = document.createElement('div');
+              listContainer.className = 'variable-update-list';
+              listContainer.style.cssText = 'margin-top: 8px; padding-left: 20px; display: none;';
+              decoration.appendChild(listContainer);
+            }
+
+            // 生成列表项
+            listContainer.innerHTML = displayItems
+              .map((item, index) => {
+                const isStreamingItem = item === '正在生成...';
+                return `<div class="variable-update-item" style="
+                  padding: 6px 0;
+                  border-bottom: 1px solid rgba(139, 105, 20, 0.1);
+                  color: #8b4513;
+                  font-size: 0.9em;
+                  ${isStreamingItem ? 'font-style: italic; opacity: 0.7;' : ''}
+                ">${isStreamingItem ? '⏳ ' : '• '}${item}</div>`;
+              })
+              .join('');
+
+            // 设置展开/折叠状态
+            if (isExpanded) {
+              listContainer.style.display = 'block';
+              expandBtn.style.transform = 'rotate(180deg)';
+            } else {
+              listContainer.style.display = 'none';
+              expandBtn.style.transform = 'rotate(0deg)';
+            }
+
+            // 绑定点击事件（只绑定一次）
+            if (!summaryText.hasAttribute('data-click-bound')) {
+              summaryText.setAttribute('data-click-bound', 'true');
+              summaryText.addEventListener('click', () => {
+                const isExpanded = decoration.classList.contains('expanded');
+                if (isExpanded) {
+                  decoration.classList.remove('expanded');
+                  listContainer.style.display = 'none';
+                  expandBtn.style.transform = 'rotate(0deg)';
+                } else {
+                  decoration.classList.add('expanded');
+                  listContainer.style.display = 'block';
+                  expandBtn.style.transform = 'rotate(180deg)';
+                }
+              });
+            }
           }
 
           // 显示装饰
-          textElement.textContent = displayText;
           decoration.style.display = 'block';
 
           // 🔥 在生成中时添加动画类，生成结束后移除
