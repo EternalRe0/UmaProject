@@ -12926,7 +12926,7 @@
             if (currentCrystals < cost) {
               await this.showFullscreenAlert(`结晶不足！需要 ${cost} 个结晶，当前只有 ${currentCrystals} 个`, {
                 title: '结晶不足',
-                icon: '💎',
+                icon: '🏆',
               });
 
               return;
@@ -14803,6 +14803,7 @@
             '#shrine-modal',
             '#achievement-modal',
             '#achievements-modal',
+            '#achievement-detail-modal',
             '.item-detail-popup',
             '#roster-modal',
             '#roster-detail-modal',
@@ -14862,6 +14863,7 @@
             '#shrine-modal',
             '#achievement-modal',
             '#achievements-modal',
+            '#achievement-detail-modal',
             '.item-detail-popup',
             '#roster-modal',
             '#roster-detail-modal',
@@ -18155,6 +18157,7 @@
         #teresen-fullscreen-overlay #shrine-modal,
         #teresen-fullscreen-overlay #achievement-modal,
         #teresen-fullscreen-overlay #achievements-modal,
+        #teresen-fullscreen-overlay #achievement-detail-modal,
         #teresen-fullscreen-overlay .item-detail-popup,
         #teresen-fullscreen-overlay #roster-modal,
         #teresen-fullscreen-overlay .roster-modal,
@@ -26112,28 +26115,58 @@
       <div
         class="rules-modal-content"
         style="
-          max-width: 900px;
+          max-width: 1000px;
           width: 90%;
-          max-height: 85vh;
-          border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-          background: linear-gradient(135deg, #fdfbf7 0%, #f5f0e8 100%);
-          border: 3px solid #8b6914;
+          max-height: 90vh;
+          border-radius: 16px;
+          box-shadow:
+            0 20px 60px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(212, 175, 55, 0.2);
+          background: linear-gradient(135deg, #fff9e6 0%, #f5ead5 50%, #ede4d3 100%);
+          border: 3px solid #d4af37;
           display: flex;
           flex-direction: column;
+          position: relative;
+          overflow: hidden;
         "
       >
+        <!-- 装饰性顶部边框 -->
+        <div
+          style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #d4af37 0%, #ffd700 50%, #d4af37 100%);
+            z-index: 1;
+          "
+        ></div>
         <div
           class="rules-modal-header"
           style="
-            padding: 20px 25px;
-            background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);
-            border-radius: 12px 12px 0 0;
+            padding: 25px 30px;
+            background: linear-gradient(135deg, #d4af37 0%, #b8860b 50%, #d4af37 100%);
+            border-radius: 16px 16px 0 0;
             color: #2c1810;
             flex-shrink: 0;
+            position: relative;
+            border-bottom: 3px solid rgba(139, 105, 20, 0.3);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
           "
         >
-          <h2 class="rules-title" style="margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px">
+          <h2
+            class="rules-title"
+            style="
+              margin: 0;
+              font-size: 24px;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              font-weight: bold;
+              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            "
+          >
             🏆 成就系统
           </h2>
           <button
@@ -26141,42 +26174,67 @@
             class="close-rules-btn"
             style="
               color: #2c1810;
-              font-size: 20px;
+              font-size: 24px;
               font-weight: bold;
-              background: rgba(44, 24, 16, 0.1);
-              border: none;
+              background: rgba(44, 24, 16, 0.15);
+              border: 2px solid rgba(44, 24, 16, 0.2);
               border-radius: 50%;
-              width: 30px;
-              height: 30px;
+              width: 36px;
+              height: 36px;
               display: flex;
               align-items: center;
               justify-content: center;
+              cursor: pointer;
+              transition: all 0.2s;
             "
+            onmouseover="this.style.background='rgba(44, 24, 16, 0.3)'; this.style.transform='rotate(90deg)'"
+            onmouseout="this.style.background='rgba(44, 24, 16, 0.15)'; this.style.transform='rotate(0deg)'"
           >
             ×
           </button>
         </div>
-        <div class="rules-modal-body" style="padding: 25px; flex: 1; overflow-y: auto">
+        <div
+          class="rules-modal-body"
+          style="
+            padding: 30px;
+            flex: 1;
+            overflow-y: auto;
+            background: linear-gradient(to bottom, rgba(255, 249, 230, 0.3) 0%, transparent 100%);
+          "
+        >
           <div
             id="achievement-stats"
             style="
-              background: rgba(139, 69, 19, 0.1);
-              padding: 15px;
-              border-radius: 8px;
-              margin-bottom: 20px;
-              border: 1px solid rgba(139, 105, 20, 0.3);
+              background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(184, 134, 11, 0.1) 100%);
+              padding: 20px;
+              border-radius: 12px;
+              margin-bottom: 25px;
+              border: 2px solid rgba(212, 175, 55, 0.4);
               text-align: center;
+              box-shadow:
+                0 4px 12px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
             "
           >
-            <div style="font-weight: bold; color: #8b4513; margin-bottom: 8px">成就进度</div>
-            <div id="achievement-progress" style="color: #666"></div>
+            <div
+              style="
+                font-weight: bold;
+                color: #8b4513;
+                margin-bottom: 10px;
+                font-size: 1.1em;
+                text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+              "
+            >
+              成就进度
+            </div>
+            <div id="achievement-progress" style="color: #654321; font-size: 1.05em; font-weight: 600"></div>
           </div>
           <div
             id="achievement-grid"
             style="
               display: grid;
-              grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-              gap: 20px;
+              grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+              gap: 22px;
               align-content: flex-start;
             "
           >
@@ -26191,24 +26249,54 @@
       <div
         class="rules-modal-content"
         style="
-          max-width: 500px;
+          max-width: 550px;
           width: 90%;
-          border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-          background: linear-gradient(135deg, #fdfbf7 0%, #f5f0e8 100%);
-          border: 3px solid #8b6914;
+          border-radius: 16px;
+          box-shadow:
+            0 20px 60px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(212, 175, 55, 0.2);
+          background: linear-gradient(135deg, #fff9e6 0%, #f5ead5 50%, #ede4d3 100%);
+          border: 3px solid #d4af37;
+          position: relative;
+          overflow: hidden;
         "
       >
+        <!-- 装饰性顶部边框 -->
+        <div
+          style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #d4af37 0%, #ffd700 50%, #d4af37 100%);
+            z-index: 1;
+          "
+        ></div>
         <div
           class="rules-modal-header"
           style="
-            padding: 20px 25px;
-            background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);
-            border-radius: 12px 12px 0 0;
+            padding: 22px 28px;
+            background: linear-gradient(135deg, #d4af37 0%, #b8860b 50%, #d4af37 100%);
+            border-radius: 16px 16px 0 0;
             color: #2c1810;
+            position: relative;
+            border-bottom: 3px solid rgba(139, 105, 20, 0.3);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
           "
         >
-          <h2 class="rules-title" style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px">
+          <h2
+            class="rules-title"
+            style="
+              margin: 0;
+              font-size: 20px;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              font-weight: bold;
+              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            "
+          >
             🏆 成就详情
           </h2>
           <button
@@ -26216,68 +26304,126 @@
             class="close-rules-btn"
             style="
               color: #2c1810;
-              font-size: 20px;
+              font-size: 22px;
               font-weight: bold;
-              background: rgba(44, 24, 16, 0.1);
-              border: none;
+              background: rgba(44, 24, 16, 0.15);
+              border: 2px solid rgba(44, 24, 16, 0.2);
               border-radius: 50%;
-              width: 28px;
-              height: 28px;
+              width: 32px;
+              height: 32px;
               display: flex;
               align-items: center;
               justify-content: center;
+              cursor: pointer;
+              transition: all 0.2s;
             "
+            onmouseover="this.style.background='rgba(44, 24, 16, 0.3)'; this.style.transform='rotate(90deg)'"
+            onmouseout="this.style.background='rgba(44, 24, 16, 0.15)'; this.style.transform='rotate(0deg)'"
           >
             ×
           </button>
         </div>
-        <div class="rules-modal-body" style="padding: 25px">
-          <div style="text-align: center; margin-bottom: 20px">
-            <div id="achievement-detail-icon" style="font-size: 3em; margin-bottom: 10px">🏆</div>
+        <div
+          class="rules-modal-body"
+          style="padding: 30px; background: linear-gradient(to bottom, rgba(255, 249, 230, 0.3) 0%, transparent 100%)"
+        >
+          <div style="text-align: center; margin-bottom: 25px">
+            <div
+              id="achievement-detail-icon"
+              style="font-size: 4em; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.4))"
+            >
+              🏆
+            </div>
             <div
               id="achievement-detail-name"
-              style="font-size: 1.5em; font-weight: bold; color: #8b4513; margin-bottom: 8px"
+              style="
+                font-size: 1.6em;
+                font-weight: bold;
+                color: #8b4513;
+                margin-bottom: 12px;
+                text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+              "
             ></div>
             <div
               id="achievement-detail-quality"
               style="
                 display: inline-block;
-                padding: 4px 12px;
-                border-radius: 12px;
-                font-size: 0.9em;
+                padding: 6px 16px;
+                border-radius: 16px;
+                font-size: 0.95em;
                 font-weight: bold;
                 color: white;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
               "
             ></div>
           </div>
           <div
             id="achievement-detail-description"
-            style="margin-bottom: 15px; color: #666; text-align: center; line-height: 1.4"
+            style="
+              margin-bottom: 20px;
+              color: #654321;
+              text-align: center;
+              line-height: 1.6;
+              font-size: 1.05em;
+              padding: 15px;
+              background: rgba(255, 255, 255, 0.5);
+              border-radius: 10px;
+              border: 1px solid rgba(212, 175, 55, 0.2);
+            "
           ></div>
           <div
             id="achievement-detail-requirement"
             style="
-              background: rgba(139, 69, 19, 0.1);
-              padding: 12px;
-              border-radius: 8px;
-              margin-bottom: 15px;
-              border: 1px solid rgba(139, 105, 20, 0.3);
+              background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(184, 134, 11, 0.1) 100%);
+              padding: 18px;
+              border-radius: 12px;
+              margin-bottom: 18px;
+              border: 2px solid rgba(212, 175, 55, 0.4);
+              box-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
             "
           >
-            <div style="font-weight: bold; color: #8b4513; margin-bottom: 5px">完成条件:</div>
-            <div id="achievement-detail-req-text" style="color: #666"></div>
+            <div
+              style="
+                font-weight: bold;
+                color: #8b4513;
+                margin-bottom: 8px;
+                font-size: 1.05em;
+                text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+              "
+            >
+              完成条件:
+            </div>
+            <div id="achievement-detail-req-text" style="color: #654321; line-height: 1.5; font-size: 1em"></div>
           </div>
           <div
             id="achievement-detail-reward"
             style="
-              background: rgba(139, 69, 19, 0.1);
-              padding: 12px;
-              border-radius: 8px;
-              border: 1px solid rgba(139, 105, 20, 0.3);
+              background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(184, 134, 11, 0.1) 100%);
+              padding: 18px;
+              border-radius: 12px;
+              border: 2px solid rgba(212, 175, 55, 0.4);
+              box-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
             "
           >
-            <div style="font-weight: bold; color: #8b4513; margin-bottom: 5px">完成感言:</div>
-            <div id="achievement-detail-completion-text" style="color: #666; font-style: italic"></div>
+            <div
+              style="
+                font-weight: bold;
+                color: #8b4513;
+                margin-bottom: 8px;
+                font-size: 1.05em;
+                text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+              "
+            >
+              完成感言:
+            </div>
+            <div
+              id="achievement-detail-completion-text"
+              style="color: #654321; font-style: italic; line-height: 1.6; font-size: 1em"
+            ></div>
           </div>
         </div>
       </div>
@@ -29738,7 +29884,7 @@
 
             // 操作系（控制之爱）的三个技能方向
             suggestion: {
-              icon: '🧠',
+              icon: '🏆',
               name: '心理暗示',
               description: '基于操作系天赋的心理暗示能力，可以植入思想控制目标。',
               majorTalent: '操作系（控制之爱）',
@@ -29764,7 +29910,7 @@
               majorTalent: '具现化系（理想之爱）',
             },
             ring: {
-              icon: '💍',
+              icon: '🏆',
               name: '承诺戒指',
               description: '基于具现化系天赋的戒指能力，可以具现化拥有强大力量的戒指。',
               majorTalent: '具现化系（理想之爱）',
@@ -33080,7 +33226,7 @@
           description: '成功觉醒第一个大天赋',
           completionText: '内心深处的力量开始觉醒',
           quality: '稀有',
-          icon: '⭐',
+          icon: '🏆',
           requirement: { type: 'mvu', key: '训练员.天赋.大天赋.name', operator: '!=', value: '' },
         },
         {
@@ -33089,7 +33235,7 @@
           description: '解锁第一个小天赋（萌芽层级）',
           completionText: '天赋之路的第一步',
           quality: '普通',
-          icon: '✨',
+          icon: '🏆',
           requirement: { type: 'mvu', key: '训练员.天赋.小天赋.萌芽', operator: '!=', value: null },
         },
 
@@ -33100,7 +33246,7 @@
           description: '获得第一个畸形情感结晶',
           completionText: '这奇异的结晶散发着神秘的光芒',
           quality: '普通',
-          icon: '💎',
+          icon: '🏆',
           requirement: { type: 'mvu', key: '训练员.畸形情感结晶', operator: '>=', value: 1 },
         },
         {
@@ -33109,7 +33255,7 @@
           description: '积累50个畸形情感结晶',
           completionText: '这些结晶蕴含着强大的力量',
           quality: '稀有',
-          icon: '💍',
+          icon: '🏆',
           requirement: { type: 'mvu', key: '训练员.畸形情感结晶', operator: '>=', value: 50 },
         },
         {
@@ -33118,7 +33264,7 @@
           description: '积累100个畸形情感结晶',
           completionText: '你已经掌握了情感结晶化的秘密',
           quality: '史诗',
-          icon: '👑',
+          icon: '🏆',
           requirement: { type: 'mvu', key: '训练员.畸形情感结晶', operator: '>=', value: 100 },
         },
 
@@ -33129,7 +33275,7 @@
           description: '理智值降到20以下但仍存活',
           completionText: '在疯狂边缘，你依然坚持着',
           quality: '史诗',
-          icon: '🧠',
+          icon: '🏆',
           requirement: { type: 'mvu', key: '训练员.理智', operator: '<=', value: 20 },
         },
         {
@@ -33138,7 +33284,7 @@
           description: '体力值降到10以下',
           completionText: '疲惫不堪，但意志依然坚定',
           quality: '普通',
-          icon: '😴',
+          icon: '🏆',
           requirement: { type: 'mvu', key: '训练员.体力', operator: '<=', value: 10 },
         },
         {
@@ -33258,7 +33404,7 @@
           description: '解锁权柄层级的小天赋',
           completionText: '你开始掌握真正的权力',
           quality: '史诗',
-          icon: '👑',
+          icon: '🏆',
           requirement: { type: 'mvu', key: '训练员.天赋.小天赋.权柄', operator: '!=', value: null },
         },
         {
@@ -33298,7 +33444,7 @@
           description: '运气值达到95以上',
           completionText: '你就是传说中的天命之子',
           quality: '传说',
-          icon: '✨',
+          icon: '🏆',
           requirement: { type: 'mvu', key: '训练员.运气', operator: '>=', value: 95 },
         },
         {
@@ -33407,7 +33553,7 @@
           description: '与10位马娘建立联系',
           completionText: '你在感情管理上展现了惊人的天赋',
           quality: '史诗',
-          icon: '👑',
+          icon: '🏆',
           requirement: { type: 'mvu', key: '马娘', operator: 'count_>=', value: 10 },
         },
         {
@@ -33747,23 +33893,27 @@
 
             const card = $(`
                 <div class="achievement-card ${isCompleted ? 'completed' : 'locked'}" data-achievement-id="${achievement.id}" style="
-                  background: rgba(255, 255, 255, 0.05);
-                  border: 2px solid ${quality.color};
-                  border-radius: 12px;
-                  padding: 20px;
+                  background: ${isCompleted ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 249, 230, 0.3) 100%)' : 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(240, 240, 240, 0.1) 100%)'};
+                  border: 3px solid ${isCompleted ? quality.color : 'rgba(139, 105, 20, 0.3)'};
+                  border-radius: 14px;
+                  padding: 24px 20px;
                   cursor: pointer;
-                  transition: all 0.3s;
+                  transition: all 0.3s ease;
                   text-align: center;
                   display: flex;
                   flex-direction: column;
                   align-items: center;
-                  gap: 12px;
-                  ${!isCompleted ? 'opacity: 0.6; filter: grayscale(80%);' : 'box-shadow: 0 0 15px ' + quality.color + '40;'}
+                  gap: 14px;
+                  position: relative;
+                  overflow: hidden;
+                  ${!isCompleted ? 'opacity: 0.65; filter: grayscale(85%);' : 'box-shadow: 0 6px 20px ' + quality.color + '50, 0 0 0 1px rgba(255,255,255,0.3) inset;'}
+                  ${isCompleted ? 'transform: scale(1);' : ''}
                 ">
-                  <div style="font-size: 2.5em; ${isCompleted ? '' : 'filter: grayscale(100%);'}">${achievement.icon}</div>
-                  <div style="font-weight: bold; color: ${isCompleted ? quality.color : '#666'}; font-size: 1.1em;">${achievement.name}</div>
-                  <div style="padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: bold; color: white; background: ${quality.bgColor};">${achievement.quality}</div>
-                  ${isCompleted ? '<div style="color: #4caf50; font-size: 0.9em;">✓ 已完成</div>' : '<div style="color: #666; font-size: 0.9em;">未完成</div>'}
+                  ${isCompleted ? '<div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, ' + quality.color + ' 0%, ' + quality.color + '80 100%);"></div>' : ''}
+                  <div style="font-size: 3em; ${isCompleted ? 'filter: drop-shadow(0 4px 8px ' + quality.color + '60);' : 'filter: grayscale(100%) drop-shadow(0 2px 4px rgba(0,0,0,0.2));'} transition: transform 0.3s;">${achievement.icon}</div>
+                  <div style="font-weight: bold; color: ${isCompleted ? quality.color : '#888'}; font-size: 1.15em; text-shadow: ${isCompleted ? '0 1px 2px rgba(255,255,255,0.5)' : 'none'}; line-height: 1.3;">${achievement.name}</div>
+                  <div style="padding: 5px 14px; border-radius: 14px; font-size: 0.88em; font-weight: bold; color: white; background: ${quality.bgColor}; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">${achievement.quality}</div>
+                  ${isCompleted ? '<div style="color: #28a745; font-size: 0.95em; font-weight: 600; text-shadow: 0 1px 2px rgba(255,255,255,0.5);">✓ 已完成</div>' : '<div style="color: #999; font-size: 0.9em;">未完成</div>'}
                 </div>
               `);
 
@@ -33793,6 +33943,11 @@
           $('#achievement-detail-req-text').text(reqText);
           $('#achievement-detail-completion-text').text(achievement.completionText);
 
+          const modal = document.getElementById('achievement-detail-modal');
+          if (modal) {
+            // 🔥 确保弹窗在覆盖层内部（修复全屏显示问题）
+            this.ensureModalInOverlay(modal);
+          }
           $('#achievement-detail-modal').show();
         }
 
