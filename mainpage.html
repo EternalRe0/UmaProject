@@ -3168,20 +3168,17 @@
             }
 
             // 🔥 设置聊天历史复选框事件
-            // 🔥 查看聊天按钮 - 直接打开聊天记录查看器（带编辑功能）
+            // 🔥 查看聊天按钮 - 在故事内容区域显示聊天记录（带编辑功能）
             const chatHistoryCheckbox = document.getElementById('chat-history-checkbox');
             if (chatHistoryCheckbox) {
               chatHistoryCheckbox.addEventListener('change', async event => {
                 const isEnabled = event.target.checked;
                 if (isEnabled) {
-                  console.log('✅ 打开聊天记录查看器...');
+                  console.log('✅ 在故事内容区域显示聊天记录...');
                   await this.handleChatHistory();
                 } else {
-                  // 关闭聊天记录查看器（如果打开的话）
-                  const modal = document.getElementById('chat-history-modal');
-                  if (modal) {
-                    modal.remove();
-                  }
+                  // 恢复原始故事内容
+                  await this.restoreStoryContent();
                 }
               });
               console.log('🔄 查看聊天按钮事件已设置');
@@ -6250,46 +6247,94 @@
 
         // 🔥 人物历程功能已删除
 
-        // 处理聊天记录查看（从extra.teresen_chat加载）
+        // 🔥 处理聊天记录查看 - 直接在故事内容区域显示（从extra.teresen_chat加载）
         async handleChatHistory() {
           try {
-            console.log('💬 打开聊天记录查看器...');
+            console.log('💬 在故事内容区域显示聊天记录...');
 
-            // 🔥 从extra.teresen_chat加载完整的聊天历史（参考分析2.js的loadState）
+            const storyContent = document.getElementById('story-content');
+            if (!storyContent) {
+              console.error('❌ 找不到故事内容区域');
+              return;
+            }
+
+            // 🔥 保存原始故事内容，以便取消勾选时恢复
+            if (!this.originalStoryContent) {
+              this.originalStoryContent = storyContent.innerHTML;
+            }
+
+            // 🔥 从extra.teresen_chat加载完整的聊天历史
             const chatHistory = await this.loadChatHistoryFromExtra();
             console.log('📊 从extra.teresen_chat加载了', chatHistory.length, '条消息');
 
             if (!chatHistory || chatHistory.length === 0) {
-              await this.showCustomAlert('暂无聊天记录');
+              storyContent.innerHTML =
+                '<p class="story-text" style="text-align: center; color: #8b4513; padding: 20px;">暂无聊天记录</p>';
               return;
             }
 
-            // 转换为查看器格式
+            // 🔥 格式化并直接在故事内容区域显示聊天记录（带编辑功能）
             const formattedHistory = chatHistory.map((msg, index) => {
               // 提取content标签内容（如果有）
               let displayContent = msg.content || '';
-              const contentMatch = displayContent.match(/<content>(.*?)<\/content>/s);
+              const contentMatch = displayContent.match(/<content>([\s\S]*?)<\/content>/s);
               if (contentMatch) {
                 displayContent = contentMatch[1].trim();
               }
 
               return {
                 id: msg.id || `msg_${index}_${Date.now()}`, // 🔥 保存原始消息ID，用于编辑和删除
-                type: msg.role === 'user' ? 'user' : 'ai',
+                role: msg.role || 'assistant',
                 timestamp: msg.timestamp || Date.now() - (chatHistory.length - index) * 1000,
                 send_date: msg.timestamp ? new Date(msg.timestamp).toLocaleString('zh-CN') : `消息 #${index + 1}`,
                 content: displayContent,
                 message: msg.content || '', // 保存原始完整消息（包含标签）
-                data: msg.variableState || msg.data || null,
+                variableState: msg.variableState || msg.data || null,
                 originalIndex: index, // 保存原始索引，方便定位
               };
             });
 
-            // 创建聊天记录查看器
-            this.createChatHistoryViewer(formattedHistory);
+            const html = this.formatChatHistoryForStory(formattedHistory);
+            storyContent.innerHTML = html;
+
+            // 🔥 保存格式化后的历史记录，用于编辑和删除操作
+            this.currentChatHistory = formattedHistory;
+
+            // 🔥 绑定编辑和删除按钮事件
+            this.bindChatHistoryActions(storyContent);
+
+            // 默认滚动到底部显示最新消息
+            setTimeout(() => {
+              storyContent.scrollTo({ top: storyContent.scrollHeight, behavior: 'smooth' });
+            }, 100);
           } catch (error) {
-            console.error('打开聊天记录失败:', error);
-            await this.showCustomAlert('打开聊天记录失败: ' + error.message);
+            console.error('显示聊天记录失败:', error);
+            const storyContent = document.getElementById('story-content');
+            if (storyContent) {
+              storyContent.innerHTML = `<p class="story-text" style="text-align: center; color: #dc3545; padding: 20px;">显示聊天记录失败: ${error.message}</p>`;
+            }
+          }
+        }
+
+        /**
+         * 🔥 恢复原始故事内容
+         */
+        async restoreStoryContent() {
+          try {
+            const storyContent = document.getElementById('story-content');
+            if (!storyContent) return;
+
+            if (this.originalStoryContent) {
+              storyContent.innerHTML = this.originalStoryContent;
+              this.originalStoryContent = null; // 清除保存的内容
+              this.currentChatHistory = null; // 清除聊天历史
+              console.log('✅ 已恢复原始故事内容');
+            } else {
+              // 如果没有保存的原始内容，尝试更新故事内容
+              await this.updateStoryContent();
+            }
+          } catch (error) {
+            console.error('❌ 恢复原始故事内容失败:', error);
           }
         }
 
@@ -6508,7 +6553,164 @@
           }, 100);
         }
 
-        // 格式化聊天历史 - 改进版本，支持所有层级显示
+        /**
+         * 🔥 格式化聊天历史用于在故事内容区域显示
+         * @param {Array} chatHistory - 聊天历史数组
+         * @returns {string} HTML字符串
+         */
+        formatChatHistoryForStory(chatHistory) {
+          if (!chatHistory || chatHistory.length === 0) {
+            return '<div style="color: #8b4513; text-align: center; padding: 20px; font-weight: bold;">暂无聊天记录</div>';
+          }
+
+          console.log(`📜 正在格式化 ${chatHistory.length} 条聊天记录用于故事内容区域显示`);
+
+          let html = '';
+          let displayCount = 0;
+
+          // 按时间排序确保正确的显示顺序
+          const sortedMessages = [...chatHistory].sort((a, b) => {
+            const timeA = new Date(a.timestamp || a.send_date || Date.now()).getTime();
+            const timeB = new Date(b.timestamp || b.send_date || Date.now()).getTime();
+            return timeA - timeB;
+          });
+
+          sortedMessages.forEach((msg, index) => {
+            // 获取时间信息
+            const time = msg.send_date || (msg.timestamp ? new Date(msg.timestamp).toLocaleString('zh-CN') : '') || '';
+
+            // 获取内容信息
+            const content = msg.content || msg.message || '';
+
+            // 跳过空内容的消息
+            if (!content.trim()) {
+              return;
+            }
+
+            // 判断消息类型
+            const isUser = msg.role === 'user';
+            const isAI = msg.role === 'assistant' || msg.role === 'ai';
+
+            displayCount++;
+
+            // 🔥 生成消息唯一ID（用于编辑和删除）
+            const messageId = msg.id || `msg_${index}_${Date.now()}`;
+
+            if (isUser) {
+              html += `
+                <div class="chat-message-item" data-message-id="${messageId}" style="
+                  margin-bottom: 15px;
+                  padding: 12px;
+                  background: rgba(100, 149, 237, 0.1);
+                  border-left: 4px solid #6495ED;
+                  border-radius: 4px;
+                  position: relative;
+                ">
+                  <div style="color: #6495ED; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>🎮 玩家</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      ${time ? `<span style="font-size: 0.85em; opacity: 0.8;">${time}</span>` : ''}
+                      <div class="message-actions" style="display: flex; gap: 4px;">
+                        <button class="msg-btn edit-btn" title="编辑" data-message-id="${messageId}" style="
+                          background: rgba(100, 149, 237, 0.2);
+                          border: none;
+                          color: #6495ED;
+                          padding: 4px 8px;
+                          border-radius: 3px;
+                          cursor: pointer;
+                          font-size: 0.9em;
+                          transition: all 0.2s;
+                        " onmouseover="this.style.background='rgba(100, 149, 237, 0.4)'" onmouseout="this.style.background='rgba(100, 149, 237, 0.2)'">✏️</button>
+                        <button class="msg-btn delete-btn" title="删除" data-message-id="${messageId}" style="
+                          background: rgba(220, 53, 69, 0.2);
+                          border: none;
+                          color: #dc3545;
+                          padding: 4px 8px;
+                          border-radius: 3px;
+                          cursor: pointer;
+                          font-size: 0.9em;
+                          transition: all 0.2s;
+                        " onmouseover="this.style.background='rgba(220, 53, 69, 0.4)'" onmouseout="this.style.background='rgba(220, 53, 69, 0.2)'">🗑️</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="message-content" style="color: #2d1810; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;">
+                    ${this.escapeHtml(content)}
+                  </div>
+                </div>
+              `;
+            } else if (isAI) {
+              html += `
+                <div class="chat-message-item" data-message-id="${messageId}" style="
+                  margin-bottom: 15px;
+                  padding: 12px;
+                  background: rgba(255, 165, 0, 0.1);
+                  border-left: 4px solid #FFA500;
+                  border-radius: 4px;
+                  position: relative;
+                ">
+                  <div style="color: #FFA500; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>🤖 AI助手</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      ${time ? `<span style="font-size: 0.85em; opacity: 0.8;">${time}</span>` : ''}
+                      <div class="message-actions" style="display: flex; gap: 4px;">
+                        <button class="msg-btn edit-btn" title="编辑" data-message-id="${messageId}" style="
+                          background: rgba(255, 165, 0, 0.2);
+                          border: none;
+                          color: #FF8C00;
+                          padding: 4px 8px;
+                          border-radius: 3px;
+                          cursor: pointer;
+                          font-size: 0.9em;
+                          transition: all 0.2s;
+                        " onmouseover="this.style.background='rgba(255, 165, 0, 0.4)'" onmouseout="this.style.background='rgba(255, 165, 0, 0.2)'">✏️</button>
+                        <button class="msg-btn delete-btn" title="删除" data-message-id="${messageId}" style="
+                          background: rgba(220, 53, 69, 0.2);
+                          border: none;
+                          color: #dc3545;
+                          padding: 4px 8px;
+                          border-radius: 3px;
+                          cursor: pointer;
+                          font-size: 0.9em;
+                          transition: all 0.2s;
+                        " onmouseover="this.style.background='rgba(220, 53, 69, 0.4)'" onmouseout="this.style.background='rgba(220, 53, 69, 0.2)'">🗑️</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="message-content" style="color: #2d1810; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;">
+                    ${this.escapeHtml(content)}
+                  </div>
+                </div>
+              `;
+            }
+          });
+
+          console.log(`✅ 成功格式化 ${displayCount} 条聊天记录`);
+
+          if (html) {
+            // 添加统计信息
+            html =
+              `
+              <div style="
+                text-align: center; 
+                color: #8b4513; 
+                margin-bottom: 20px; 
+                padding: 10px;
+                background: rgba(212, 175, 55, 0.15);
+                border-radius: 4px;
+                font-weight: bold;
+              ">
+                📊 共显示 ${displayCount} 条聊天记录
+              </div>
+            ` + html;
+
+            return html;
+          } else {
+            return '<div style="color: #8b4513; text-align: center; padding: 20px; font-weight: bold;">没有找到有效的聊天记录</div>';
+          }
+        }
+
+        // 格式化聊天历史 - 改进版本，支持所有层级显示（用于弹窗，保留兼容性）
         formatChatHistory(chatHistory) {
           if (!chatHistory || chatHistory.length === 0) {
             return '<div style="color: #8b4513; text-align: center; padding: 20px; font-weight: bold;">暂无聊天记录</div>';
@@ -6758,6 +6960,192 @@
         _autoResizeTextarea(textarea) {
           textarea.style.height = 'auto';
           textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+
+        /**
+         * 🔥 绑定聊天记录的编辑和删除按钮事件（用于故事内容区域）
+         * @param {HTMLElement} container - 容器元素（story-content）
+         */
+        bindChatHistoryActions(container) {
+          // 使用事件委托，通过data属性标识来避免重复绑定
+          // 移除之前可能存在的监听器（通过命名函数来实现）
+          if (this.chatHistoryClickHandler) {
+            container.removeEventListener('click', this.chatHistoryClickHandler);
+          }
+
+          // 创建新的监听器函数
+          this.chatHistoryClickHandler = async e => {
+            const btn = e.target.closest('.msg-btn');
+            if (!btn) return;
+
+            const messageId = btn.getAttribute('data-message-id');
+            const messageItem = container.querySelector(`[data-message-id="${messageId}"]`);
+            if (!messageItem || !this.currentChatHistory) return;
+
+            if (btn.classList.contains('edit-btn')) {
+              // 编辑消息
+              await this.handleEditMessageInStory(messageId, messageItem, this.currentChatHistory);
+            } else if (btn.classList.contains('delete-btn')) {
+              // 删除消息
+              await this.handleDeleteMessageInStory(messageId, this.currentChatHistory);
+            } else if (btn.classList.contains('save-btn')) {
+              // 保存编辑
+              const textarea = messageItem.querySelector('.edit-textarea');
+              if (textarea) {
+                await this.updateMessageInStory(messageId, textarea.value, this.currentChatHistory);
+              }
+            } else if (btn.classList.contains('cancel-btn')) {
+              // 取消编辑
+              await this.refreshChatHistoryInStory(this.currentChatHistory);
+            }
+          };
+
+          // 绑定事件
+          container.addEventListener('click', this.chatHistoryClickHandler);
+        }
+
+        /**
+         * 🔥 在故事内容区域编辑消息
+         * @param {string} messageId - 消息ID
+         * @param {HTMLElement} messageItem - 消息DOM元素
+         * @param {Array} chatHistory - 聊天历史数组
+         */
+        async handleEditMessageInStory(messageId, messageItem, chatHistory) {
+          // 复用现有的handleEditMessage逻辑
+          await this.handleEditMessage(messageId, messageItem, chatHistory);
+        }
+
+        /**
+         * 🔥 在故事内容区域删除消息
+         * @param {string} messageId - 消息ID
+         * @param {Array} chatHistory - 聊天历史数组
+         */
+        async handleDeleteMessageInStory(messageId, chatHistory) {
+          try {
+            if (!confirm('确定要删除这条消息吗？')) {
+              return;
+            }
+
+            // 从extra.teresen_chat加载完整历史
+            const fullHistory = await this.loadChatHistoryFromExtra();
+
+            // 删除指定消息
+            const updatedHistory = fullHistory.filter(msg => msg.id !== messageId);
+
+            // 🔥 参考分析2.js的handleDelete：删除后调用_syncStateWithHistory同步变量状态
+            await this._syncStateWithHistory(updatedHistory);
+
+            // 🔥 重新加载并刷新故事内容区域的聊天记录显示
+            await this.refreshChatHistoryInStory(updatedHistory);
+
+            // 🔥 更新UI以反映变量状态的变化
+            const lastMessage = updatedHistory[updatedHistory.length - 1];
+            if (lastMessage && lastMessage.variableState) {
+              this.currentMvuState = JSON.parse(JSON.stringify(lastMessage.variableState));
+              if (lastMessage.variableState.stat_data) {
+                this.renderUI(lastMessage.variableState.stat_data);
+              }
+            }
+          } catch (error) {
+            console.error('❌ 删除消息失败:', error);
+          }
+        }
+
+        /**
+         * 🔥 在故事内容区域更新消息
+         * @param {string} messageId - 消息ID
+         * @param {string} newContent - 新内容
+         * @param {Array} chatHistory - 聊天历史数组
+         */
+        async updateMessageInStory(messageId, newContent, chatHistory) {
+          try {
+            // 从extra.teresen_chat加载完整历史
+            const fullHistory = await this.loadChatHistoryFromExtra();
+
+            // 找到要更新的消息
+            const msgIndex = fullHistory.findIndex(msg => msg.id === messageId);
+            if (msgIndex === -1) {
+              console.warn('⚠️ 找不到要更新的消息:', messageId);
+              return;
+            }
+
+            // 更新消息内容（如果是AI消息，需要包装在content标签中）
+            const msg = fullHistory[msgIndex];
+            if (msg.role === 'assistant' || msg.role === 'ai') {
+              // AI消息需要包装在content标签中
+              msg.content = `<content>\n${newContent}\n</content>`;
+            } else {
+              // 用户消息直接更新
+              msg.content = newContent;
+            }
+
+            // 保存更新后的历史
+            await this.saveChatHistoryToExtra(fullHistory);
+
+            // 🔥 如果是最后一条消息，需要同步变量状态
+            if (msgIndex === fullHistory.length - 1) {
+              await this._syncStateWithHistory(fullHistory);
+            }
+
+            // 刷新显示
+            await this.refreshChatHistoryInStory(fullHistory);
+          } catch (error) {
+            console.error('❌ 更新消息失败:', error);
+          }
+        }
+
+        /**
+         * 🔥 刷新故事内容区域的聊天记录显示
+         * @param {Array} chatHistory - 聊天历史数组（可选，如果不提供则从extra.teresen_chat加载）
+         */
+        async refreshChatHistoryInStory(chatHistory = null) {
+          try {
+            const storyContent = document.getElementById('story-content');
+            if (!storyContent) return;
+
+            // 如果没有提供历史记录，从extra.teresen_chat加载
+            if (!chatHistory) {
+              chatHistory = await this.loadChatHistoryFromExtra();
+            }
+
+            if (!chatHistory || chatHistory.length === 0) {
+              storyContent.innerHTML =
+                '<p class="story-text" style="text-align: center; color: #8b4513; padding: 20px;">暂无聊天记录</p>';
+              return;
+            }
+
+            // 格式化历史记录
+            const formattedHistory = chatHistory.map((msg, index) => {
+              let displayContent = msg.content || '';
+              const contentMatch = displayContent.match(/<content>([\s\S]*?)<\/content>/s);
+              if (contentMatch) {
+                displayContent = contentMatch[1].trim();
+              }
+
+              return {
+                id: msg.id || `msg_${index}_${Date.now()}`,
+                role: msg.role || 'assistant',
+                timestamp: msg.timestamp || Date.now() - (chatHistory.length - index) * 1000,
+                send_date: msg.timestamp ? new Date(msg.timestamp).toLocaleString('zh-CN') : `消息 #${index + 1}`,
+                content: displayContent,
+                message: msg.content || '',
+                variableState: msg.variableState || msg.data || null,
+                originalIndex: index,
+              };
+            });
+
+            // 更新显示
+            const html = this.formatChatHistoryForStory(formattedHistory);
+            storyContent.innerHTML = html;
+
+            // 更新保存的历史记录
+            this.currentChatHistory = formattedHistory;
+
+            // 重新绑定事件
+            this.bindChatHistoryActions(storyContent);
+          } catch (error) {
+            console.error('❌ 刷新聊天记录显示失败:', error);
+          }
         }
 
         /**
