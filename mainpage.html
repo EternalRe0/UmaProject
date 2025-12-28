@@ -354,8 +354,6 @@
               $(document).on('click', '#profile-avatar', () => {
                 this.showAvatarSelector();
               }),
-              // 人物历程按钮已移到设置模态框中，这里保留功能绑定
-              $(document).on('click', '#journey-history-btn', () => this.handleHistory()),
               $('#card-display-btn').on('click', () => this.showCardDisplayModal()),
               $('#close-card-display-btn').on('click', () => {
                 const modal = document.getElementById('card-display-modal');
@@ -6616,55 +6614,61 @@
             const messageId = msg.id || `msg_${index}_${Date.now()}`;
 
             // 🔥 简洁的故事正文风格显示：按照顺序显示，用户输入 → AI回复 → 用户输入 → AI回复...
+            // 🔥 转义content用于data-content属性（避免HTML特殊字符问题）
+            const escapedContent = this.escapeHtml(content).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
             html += `
               <div class="chat-message-item" data-message-id="${messageId}" style="
-                margin-bottom: 25px;
+                margin-bottom: 15px;
                 position: relative;
-                padding-bottom: 15px;
+                padding-bottom: 10px;
                 border-bottom: 1px solid rgba(139, 105, 20, 0.1);
               ">
                 <div style="
-                  color: rgba(139, 105, 20, 0.6);
-                  font-size: 0.85em;
-                  margin-bottom: 8px;
-                  font-weight: 500;
-                ">第 ${messageNumber} 条消息</div>
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  margin-bottom: 6px;
+                ">
+                  <div style="
+                    color: rgba(139, 105, 20, 0.6);
+                    font-size: 0.8em;
+                    font-weight: 500;
+                  ">第 ${messageNumber} 条消息</div>
+                  <div class="message-actions" style="
+                    display: flex;
+                    gap: 6px;
+                    opacity: 0;
+                    transition: opacity 0.2s;
+                  ">
+                    <span class="msg-icon copy-btn" title="复制" data-message-id="${messageId}" data-content="${escapedContent}" style="
+                      color: rgba(139, 105, 20, 0.6);
+                      cursor: pointer;
+                      font-size: 1em;
+                      transition: color 0.2s;
+                      user-select: none;
+                    " onmouseover="this.style.color='rgba(139, 105, 20, 0.9)'" onmouseout="this.style.color='rgba(139, 105, 20, 0.6)'">📋</span>
+                    <span class="msg-icon edit-btn" title="编辑" data-message-id="${messageId}" style="
+                      color: rgba(139, 105, 20, 0.6);
+                      cursor: pointer;
+                      font-size: 1em;
+                      transition: color 0.2s;
+                      user-select: none;
+                    " onmouseover="this.style.color='rgba(139, 105, 20, 0.9)'" onmouseout="this.style.color='rgba(139, 105, 20, 0.6)'">✏️</span>
+                    <span class="msg-icon delete-btn" title="删除" data-message-id="${messageId}" style="
+                      color: rgba(139, 105, 20, 0.6);
+                      cursor: pointer;
+                      font-size: 1em;
+                      transition: color 0.2s;
+                      user-select: none;
+                    " onmouseover="this.style.color='rgba(220, 53, 69, 0.8)'" onmouseout="this.style.color='rgba(139, 105, 20, 0.6)'">🗑️</span>
+                  </div>
+                </div>
                 <div class="message-content" style="
                   color: #2d1810;
-                  line-height: 1.8;
+                  line-height: 1.6;
                   white-space: pre-wrap;
                   word-wrap: break-word;
                 ">${this.escapeHtml(content)}</div>
-                <div class="message-actions" style="
-                  position: absolute;
-                  top: 5px;
-                  right: 5px;
-                  display: flex;
-                  gap: 4px;
-                  opacity: 0;
-                  transition: opacity 0.2s;
-                ">
-                  <button class="msg-btn edit-btn" title="编辑" data-message-id="${messageId}" style="
-                    background: rgba(139, 105, 20, 0.1);
-                    border: 1px solid rgba(139, 105, 20, 0.3);
-                    color: #8b4513;
-                    padding: 4px 8px;
-                    border-radius: 3px;
-                    cursor: pointer;
-                    font-size: 0.85em;
-                    transition: all 0.2s;
-                  " onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'" onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'">✏️</button>
-                  <button class="msg-btn delete-btn" title="删除" data-message-id="${messageId}" style="
-                    background: rgba(139, 105, 20, 0.1);
-                    border: 1px solid rgba(139, 105, 20, 0.3);
-                    color: #8b4513;
-                    padding: 4px 8px;
-                    border-radius: 3px;
-                    cursor: pointer;
-                    font-size: 0.85em;
-                    transition: all 0.2s;
-                  " onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'" onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'">🗑️</button>
-                </div>
               </div>
             `;
           });
@@ -25639,37 +25643,6 @@
               重置默认
             </button>
           </div>
-
-          <!-- 人物历程按钮 -->
-          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(139, 105, 20, 0.2)">
-            <button
-              id="journey-history-btn"
-              style="
-                width: 100%;
-                padding: 12px 24px;
-                background: linear-gradient(135deg, #8b6914, #a0826d);
-                border: none;
-                border-radius: 8px;
-                color: #fff;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-              "
-              onmouseover="this.style.background='linear-gradient(135deg, #a0826d, #8b6914)'; this.style.transform='translateY(-1px)'"
-              onmouseout="this.style.background='linear-gradient(135deg, #8b6914, #a0826d)'; this.style.transform='translateY(0)'"
-            >
-              <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"
-                />
-              </svg>
-              <span>人物历程</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -27105,10 +27078,6 @@
     </audio>
 
     <audio id="uma-roster-sound" preload="auto">
-      <source src="https://files.catbox.moe/zxb18s.mp3" type="audio/mpeg" />
-    </audio>
-
-    <audio id="journey-history-sound" preload="auto">
       <source src="https://files.catbox.moe/zxb18s.mp3" type="audio/mpeg" />
     </audio>
 
@@ -34057,4 +34026,3 @@
   - 只能在类脑、旅程二传
 ================================================================================
 -->
-
