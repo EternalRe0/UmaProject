@@ -5309,40 +5309,29 @@
               overlay.style.backgroundImage = 'none';
             }
 
-            // 🔥 使用右侧面板的缩放控制器（始终在右侧面板顶部）
+            // 🔥 使用右侧面板的缩放控制器（按钮形式：缩小、重置、放大）
             const zoomControlsInline = document.getElementById('zoom-controls-inline');
-            const zoomSliderInline = document.getElementById('zoom-slider-inline');
-            const zoomValueInline = document.getElementById('zoom-value-inline');
+            const zoomOutBtn = document.getElementById('zoom-out-btn-inline');
+            const zoomResetBtn = document.getElementById('zoom-reset-btn-inline');
+            const zoomInBtn = document.getElementById('zoom-in-btn-inline');
 
-            if (!zoomSliderInline || !zoomValueInline) {
-              console.error('❌ 缩放控制器元素未找到！');
+            if (!zoomOutBtn || !zoomResetBtn || !zoomInBtn) {
+              console.error('❌ 缩放控制器按钮未找到！');
               return;
             }
 
-            // 缩放滑块（使用右侧面板的）
-            const zoomSlider = zoomSliderInline;
-            const zoomValue = zoomValueInline;
-
-            // 计算初始缩放比例（电脑端默认140%）
-            const screenWidth = window.innerWidth - 40;
-            const screenHeight = window.innerHeight - 40;
-            const widthByHeight = screenHeight * originalAspectRatio;
-            const heightByWidth = screenWidth / originalAspectRatio;
-
             // 🔥 电脑端默认120%缩放
-            let initialScale = 1.2;
+            let currentScale = 1.2;
+            const defaultScale = 1.2; // 重置时的默认缩放
+            const minScale = 0.5;
+            const maxScale = 2;
+            const stepScale = 0.1;
 
-            // 限制初始缩放范围
-            initialScale = Math.max(0.5, Math.min(2, initialScale));
-            zoomSlider.value = initialScale.toFixed(1);
-            zoomValue.textContent = Math.round(initialScale * 100) + '%';
-
-            // 缩放事件处理（限制尺寸，不直接扩展）
-            let currentScale = initialScale;
-            zoomSlider.addEventListener('input', e => {
-              const scale = parseFloat(e.target.value);
+            // 应用缩放的函数
+            const applyZoom = (scale) => {
+              // 限制缩放范围
+              scale = Math.max(minScale, Math.min(maxScale, scale));
               currentScale = scale;
-              zoomValue.textContent = Math.round(scale * 100) + '%';
 
               // 应用缩放，保持宽高比，并限制尺寸（防止直接扩展）
               const scaledWidth = originalWidth * scale;
@@ -5357,7 +5346,30 @@
               panels.style.transform = '';
               panels.style.transformOrigin = 'center center';
               panels.style.flexShrink = '0'; // 🔥 防止被压缩
-            });
+            };
+
+            // 绑定按钮事件
+            if (!zoomOutBtn.dataset.initialized) {
+              zoomOutBtn.dataset.initialized = 'true';
+              
+              // 缩小按钮
+              zoomOutBtn.addEventListener('click', () => {
+                applyZoom(currentScale - stepScale);
+              });
+
+              // 重置按钮
+              zoomResetBtn.addEventListener('click', () => {
+                applyZoom(defaultScale);
+              });
+
+              // 放大按钮
+              zoomInBtn.addEventListener('click', () => {
+                applyZoom(currentScale + stepScale);
+              });
+            }
+
+            // 应用初始缩放
+            applyZoom(currentScale);
 
             // 关闭按钮
             const closeBtn = document.createElement('button');
@@ -23740,23 +23752,73 @@
                 />
               </svg>
             </button>
-            <!-- 右侧：缩放控制器（始终显示） -->
-            <div id="zoom-controls-inline" style="display: flex; align-items: center; gap: 8px; margin-left: auto">
-              <span style="color: #8b4513; font-size: 12px; font-weight: 500">缩放:</span>
-              <input
-                type="range"
-                id="zoom-slider-inline"
-                min="0.5"
-                max="2"
-                step="0.1"
-                value="1.2"
-                style="width: 120px; cursor: pointer"
-              />
-              <span
-                id="zoom-value-inline"
-                style="color: #8b4513; font-size: 12px; min-width: 45px; text-align: center; font-weight: 500"
-                >120%</span
-              >
+            <!-- 右侧：缩放控制器（始终显示）- 按钮形式：缩小、重置、放大 -->
+            <div id="zoom-controls-inline" style="display: flex; align-items: center; gap: 4px; margin-left: auto">
+              <button
+                id="zoom-out-btn-inline"
+                title="缩小"
+                style="
+                  cursor: pointer;
+                  background: rgba(139, 105, 20, 0.1);
+                  border: 1px solid rgba(139, 105, 20, 0.3);
+                  border-radius: 4px;
+                  padding: 6px;
+                  color: #8b4513;
+                  transition: all 0.2s ease;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 18px;
+                  font-weight: bold;
+                  width: 32px;
+                  height: 32px;
+                "
+                onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'"
+                onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'"
+              >−</button>
+              <button
+                id="zoom-reset-btn-inline"
+                title="重置"
+                style="
+                  cursor: pointer;
+                  background: rgba(139, 105, 20, 0.1);
+                  border: 1px solid rgba(139, 105, 20, 0.3);
+                  border-radius: 4px;
+                  padding: 6px;
+                  color: #8b4513;
+                  transition: all 0.2s ease;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 16px;
+                  width: 32px;
+                  height: 32px;
+                "
+                onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'"
+                onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'"
+              >⌂</button>
+              <button
+                id="zoom-in-btn-inline"
+                title="放大"
+                style="
+                  cursor: pointer;
+                  background: rgba(139, 105, 20, 0.1);
+                  border: 1px solid rgba(139, 105, 20, 0.3);
+                  border-radius: 4px;
+                  padding: 6px;
+                  color: #8b4513;
+                  transition: all 0.2s ease;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 18px;
+                  font-weight: bold;
+                  width: 32px;
+                  height: 32px;
+                "
+                onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'"
+                onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'"
+              >+</button>
             </div>
           </div>
 
