@@ -5322,10 +5322,12 @@
             // 缩放滑块（使用右侧面板的）
             let zoomSlider = zoomSliderInline;
             let zoomValue = zoomValueInline;
+            let controls = null; // 🔥 声明 controls 变量
+            let zoomLabel = null; // 🔥 声明 zoomLabel 变量
 
             // 如果右侧面板的控制器不存在，创建备用控制器（悬浮窗）
             if (!zoomSlider || !zoomValue) {
-              const controls = document.createElement('div');
+              controls = document.createElement('div');
               controls.id = 'fullscreen-controls';
               controls.style.cssText = `
                 position: absolute;
@@ -5342,7 +5344,7 @@
                 backdrop-filter: blur(4px);
               `;
 
-              const zoomLabel = document.createElement('span');
+              zoomLabel = document.createElement('span');
               zoomLabel.textContent = '缩放:';
               zoomLabel.style.cssText = 'color: #e0dcd1; font-size: 14px; margin-right: 5px;';
 
@@ -5362,7 +5364,6 @@
               controls.appendChild(zoomLabel);
               controls.appendChild(zoomSlider);
               controls.appendChild(zoomValue);
-              overlay.appendChild(controls);
             }
 
             // 计算初始缩放比例（电脑端默认140%）
@@ -5429,11 +5430,30 @@
             };
             closeBtn.onclick = () => this.toggleFullscreen();
 
-            // 组装控制栏
-            controls.appendChild(zoomLabel);
-            controls.appendChild(zoomSlider);
-            controls.appendChild(zoomValue);
-            controls.appendChild(closeBtn);
+            // 🔥 组装控制栏（只有在使用悬浮窗时才需要）
+            if (controls) {
+              controls.appendChild(closeBtn);
+            } else {
+              // 🔥 如果使用右侧面板的控制器，关闭按钮添加到覆盖层右上角
+              closeBtn.style.cssText = `
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                width: 32px;
+                height: 32px;
+                background: rgba(139, 105, 20, 0.8);
+                border: 2px solid #8b6914;
+                border-radius: 50%;
+                color: #e0dcd1;
+                font-size: 18px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+                z-index: 100000;
+              `;
+            }
 
             // 创建内容容器（限制尺寸，不直接扩展）
             const contentWrapper = document.createElement('div');
@@ -5465,7 +5485,13 @@
             // 组装覆盖层
             contentWrapper.appendChild(panels);
             overlay.appendChild(contentWrapper);
-            overlay.appendChild(controls);
+            // 🔥 只有在使用悬浮窗时才添加到覆盖层
+            if (controls) {
+              overlay.appendChild(controls);
+            } else if (closeBtn && !controls) {
+              // 🔥 如果使用右侧面板的控制器，只添加关闭按钮
+              overlay.appendChild(closeBtn);
+            }
 
             // 添加到body
             document.body.appendChild(overlay);
