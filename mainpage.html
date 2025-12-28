@@ -1,3 +1,4 @@
+
 <!--
 ================================================================================
   特雷森规则怪谈 - 训练员生存指南
@@ -191,6 +192,7 @@
           // 🔥 存档系统相关变量初始化
           this.chatHistoryCache = []; // 前端历史记录缓存（回合快照数组）
           this.historyViewIndex = -1; // 当前查看的历史索引
+          this.isStreaming = false; // 🔥 流式传输状态标志，防止updateStoryContent在流式传输时覆盖内容
 
           (t(this, 'updateInterval', null),
             t(this, 'isInitialized', !1),
@@ -2235,6 +2237,8 @@
               // 生成结束，停止高频更新
               clearInterval(this.highFrequencyStreamingInterval);
               this.highFrequencyStreamingInterval = null;
+              // 🔥 标记流式传输结束（备用，以防GENERATION_ENDED事件没有触发）
+              this.isStreaming = false;
               // 生成结束时，确保最后一次更新（使用完整文本）
               const latestMessage = document.querySelector('.message:last-child .message-content');
               if (latestMessage && latestMessage.textContent) {
@@ -2486,23 +2490,25 @@
               );
             }
 
-            // 🔥 参考分析2.js的saveState：如果有变量，调用commitUpdates提交变量更新
-            // 分析2.js: if (e) { const t = () => JSON.parse(JSON.stringify(e)); await this.core.commitUpdates([t]); }
+            // 🔥 参考分析2.js的_updateVariablesInScope：如果有变量，先更新message层，再同步到chat层
             if (updatedVariables) {
               try {
-                // 尝试调用commitUpdates（如果存在）
-                if (
-                  typeof window.PwAic !== 'undefined' &&
-                  window.PwAic.core &&
-                  typeof window.PwAic.core.commitUpdates === 'function'
-                ) {
-                  const variableGetter = () => JSON.parse(JSON.stringify(updatedVariables));
-                  await window.PwAic.core.commitUpdates([variableGetter]);
-                  console.log('✅ 已通过commitUpdates提交变量更新');
+                if (typeof updateVariablesWith === 'function' && typeof getVariables === 'function') {
+                  // 1. 先更新message层（latest消息）
+                  await updateVariablesWith(() => JSON.parse(JSON.stringify(updatedVariables)), {
+                    type: 'message',
+                    message_id: 'latest',
+                  });
+
+                  // 2. 获取更新后的变量
+                  const updated = getVariables({ type: 'message' });
+
+                  // 3. 同步到chat层（这样整个会话都能访问）
+                  await updateVariablesWith(() => updated, { type: 'chat' });
+
+                  console.log('✅ 已通过updateVariablesWith更新message层和chat层变量');
                 } else {
-                  // 如果没有commitUpdates，尝试使用eventEmit直接更新变量
-                  // 这是备用方案，可能不如commitUpdates准确
-                  console.warn('⚠️ commitUpdates不可用，尝试使用备用方案更新变量');
+                  console.warn('⚠️ updateVariablesWith或getVariables不可用，变量仅保存在本地');
                 }
               } catch (commitError) {
                 console.error('❌ 提交变量更新失败:', commitError);
@@ -2624,18 +2630,28 @@
                 // 3. 更新本地状态
                 this.currentMvuState = JSON.parse(JSON.stringify(variableState));
 
-                // 4. 🔥 调用commitUpdates提交变量更新（参考分析2.js的saveState）
-                if (
-                  typeof window.PwAic !== 'undefined' &&
-                  window.PwAic.core &&
-                  typeof window.PwAic.core.commitUpdates === 'function'
-                ) {
-                  const variableGetter = () => JSON.parse(JSON.stringify(variableState));
-                  await window.PwAic.core.commitUpdates([variableGetter]);
-                  console.log('✅ 已通过commitUpdates恢复变量状态');
-                } else {
-                  // 备用方案：如果没有commitUpdates，至少更新本地状态
-                  console.warn('⚠️ commitUpdates不可用，仅更新本地状态');
+                // 4. 🔥 参考分析2.js的_updateVariablesInScope：先更新message层，再同步到chat层
+                try {
+                  if (typeof updateVariablesWith === 'function' && typeof getVariables === 'function') {
+                    // 1. 先更新message层（latest消息）
+                    await updateVariablesWith(() => JSON.parse(JSON.stringify(variableState)), {
+                      type: 'message',
+                      message_id: 'latest',
+                    });
+
+                    // 2. 获取更新后的变量
+                    const updated = getVariables({ type: 'message' });
+
+                    // 3. 同步到chat层（这样整个会话都能访问）
+                    await updateVariablesWith(() => updated, { type: 'chat' });
+
+                    console.log('✅ 已通过updateVariablesWith恢复message层和chat层变量状态');
+                  } else {
+                    console.warn('⚠️ updateVariablesWith或getVariables不可用，仅更新本地状态');
+                  }
+                } catch (varError) {
+                  console.error('❌ 恢复变量状态失败:', varError);
+                  // 即使失败也继续，至少本地状态已更新
                 }
 
                 // 5. 重新渲染UI（如果有stat_data）
@@ -3169,6 +3185,8 @@
 
               (eventOn(e.GENERATION_STARTED, () => {
                 (console.log('🚀 AI开始生成回复'),
+                  // 🔥 标记开始流式传输，防止updateStoryContent覆盖流式内容
+                  (this.isStreaming = true),
                   // 🔥 在生成开始前保存当前正文内容，用于生成失败时恢复
                   (() => {
                     const storyContent = document.getElementById('story-content');
@@ -3191,6 +3209,8 @@
                 }),
                 eventOn(e.GENERATION_ENDED, e => {
                   console.log('✅ AI回复生成完成');
+                  // 🔥 标记流式传输结束，允许updateStoryContent更新
+                  this.isStreaming = false;
                   this.endReplyTimer();
 
                   // 停止高频流式更新
@@ -3354,6 +3374,12 @@
           const perfStart = performance.now();
           const callStack = new Error().stack?.split('\n').slice(1, 4).join(' -> ') || 'unknown';
           console.log(`⏱️ [性能] updateStoryContent 开始 (调用来源: ${callStack})`);
+
+          // 🔥 关键修复：如果正在流式传输，跳过更新（避免覆盖流式传输显示的内容）
+          if (this.isStreaming) {
+            console.log('⏭️ 正在流式传输，跳过updateStoryContent（避免覆盖流式内容）');
+            return;
+          }
 
           try {
             let n = '';
@@ -6032,29 +6058,38 @@
           });
         }
 
-        // 处理聊天记录查看（使用chatHistoryCache）
+        // 处理聊天记录查看（从extra.teresen_chat加载）
         async handleChatHistory() {
           try {
             console.log('💬 打开聊天记录查看器...');
 
-            // 🔥 使用chatHistoryCache（回合快照数组）而不是getChatHistory()
-            const chatHistory = this.chatHistoryCache || [];
-            console.log('📊 获取到回合快照历史:', chatHistory.length, '个回合');
+            // 🔥 从extra.teresen_chat加载完整的聊天历史（参考分析2.js的loadState）
+            const chatHistory = await this.loadChatHistoryFromExtra();
+            console.log('📊 从extra.teresen_chat加载了', chatHistory.length, '条消息');
 
             if (!chatHistory || chatHistory.length === 0) {
-              await this.showCustomAlert('暂无回合快照记录');
+              await this.showCustomAlert('暂无聊天记录');
               return;
             }
 
             // 转换为查看器格式
-            const formattedHistory = chatHistory.map(snapshot => ({
-              type: snapshot.is_user ? 'user' : 'ai',
-              timestamp: snapshot.timestamp || Date.now(),
-              send_date: snapshot.timestamp ? new Date(snapshot.timestamp).toLocaleString('zh-CN') : '',
-              content: snapshot.message || '',
-              message: snapshot.message || '',
-              data: snapshot.data || null,
-            }));
+            const formattedHistory = chatHistory.map((msg, index) => {
+              // 提取content标签内容（如果有）
+              let displayContent = msg.content || '';
+              const contentMatch = displayContent.match(/<content>(.*?)<\/content>/s);
+              if (contentMatch) {
+                displayContent = contentMatch[1].trim();
+              }
+
+              return {
+                type: msg.role === 'user' ? 'user' : 'ai',
+                timestamp: msg.timestamp || Date.now() - (chatHistory.length - index) * 1000,
+                send_date: msg.timestamp ? new Date(msg.timestamp).toLocaleString('zh-CN') : `消息 #${index + 1}`,
+                content: displayContent,
+                message: msg.content || '',
+                data: msg.variableState || msg.data || null,
+              };
+            });
 
             // 创建聊天记录查看器
             this.createChatHistoryViewer(formattedHistory);
@@ -33154,3 +33189,4 @@
   - 只能在类脑、旅程二传
 ================================================================================
 -->
+
