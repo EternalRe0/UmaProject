@@ -629,6 +629,9 @@
               this.updateSexPositionImage(),
               this.updateTaskList());
 
+            // 🔥 更新返回和重新生成按钮的状态
+            await this.updateBackRerollButtonsState();
+
             const e = Date.now();
 
             const lastUpdate = parseInt(localStorage.getItem('teresen_last_full_update') || '0');
@@ -6712,7 +6715,7 @@
                   <div style="color: #6495ED; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
                     <span>🎮 玩家</span>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="font-size: 0.85em; opacity: 0.8;">${time}</span>
+                    <span style="font-size: 0.85em; opacity: 0.8;">${time}</span>
                       <div class="message-actions" style="display: flex; gap: 4px;">
                         <button class="msg-btn edit-btn" title="编辑" data-message-id="${messageId}" style="
                           background: rgba(100, 149, 237, 0.2);
@@ -6734,7 +6737,7 @@
                           font-size: 0.9em;
                           transition: all 0.2s;
                         " onmouseover="this.style.background='rgba(220, 53, 69, 0.4)'" onmouseout="this.style.background='rgba(220, 53, 69, 0.2)'">🗑️</button>
-                      </div>
+                  </div>
                     </div>
                   </div>
                   <div class="message-content" style="color: #2d1810; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; font-weight: 500;">
@@ -6757,7 +6760,7 @@
                   <div style="color: #FFA500; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
                     <span>🤖 AI助手</span>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="font-size: 0.85em; opacity: 0.8;">${time}</span>
+                    <span style="font-size: 0.85em; opacity: 0.8;">${time}</span>
                       <div class="message-actions" style="display: flex; gap: 4px;">
                         <button class="msg-btn edit-btn" title="编辑" data-message-id="${messageId}" style="
                           background: rgba(255, 165, 0, 0.2);
@@ -6779,7 +6782,7 @@
                           font-size: 0.9em;
                           transition: all 0.2s;
                         " onmouseover="this.style.background='rgba(220, 53, 69, 0.4)'" onmouseout="this.style.background='rgba(220, 53, 69, 0.2)'">🗑️</button>
-                      </div>
+                  </div>
                     </div>
                   </div>
                   <div class="message-content" style="color: #2d1810; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; font-weight: 500;">
@@ -6924,8 +6927,9 @@
             // 删除指定消息
             const updatedHistory = fullHistory.filter(msg => msg.id !== messageId);
 
-            // 保存更新后的历史
-            await this.saveChatHistoryToExtra(updatedHistory, null);
+            // 🔥 参考分析2.js的handleDelete：删除后调用_syncStateWithHistory同步变量状态
+            // _syncStateWithHistory会从updatedHistory的最后一条消息获取variableState并更新变量
+            await this._syncStateWithHistory(updatedHistory);
 
             // 重新加载并刷新查看器
             const newHistory = await this.loadChatHistoryFromExtra();
@@ -6960,13 +6964,22 @@
                   contentArea.scrollTo({ top: contentArea.scrollHeight, behavior: 'smooth' });
                 }, 100);
               }
+
+              // 🔥 更新UI以反映变量状态的变化
+              const lastMessage = newHistory[newHistory.length - 1];
+              if (lastMessage && lastMessage.variableState) {
+                this.currentMvuState = JSON.parse(JSON.stringify(lastMessage.variableState));
+                if (lastMessage.variableState.stat_data) {
+                  this.renderUI(lastMessage.variableState.stat_data);
+                }
+              }
             } else {
               // 如果没有消息了，关闭查看器
               modal.remove();
               await this.showCustomAlert('已删除所有消息');
             }
 
-            console.log('✅ 消息已删除');
+            console.log('✅ 消息已删除，变量状态已同步');
           } catch (error) {
             console.error('❌ 删除消息失败:', error);
             await this.showCustomAlert('删除消息失败: ' + error.message);
@@ -6995,11 +7008,30 @@
             // 更新消息内容
             fullHistory[messageIndex].content = newContent.trim();
 
-            // 保存更新后的历史
-            await this.saveChatHistoryToExtra(fullHistory, null);
+            // 🔥 参考分析2.js的updateMessage：编辑消息时传null，不更新变量状态
+            // 但如果是最后一条消息，应该调用_syncStateWithHistory来同步变量状态
+            // 这里我们检查是否是最后一条消息
+            if (messageIndex === fullHistory.length - 1) {
+              // 如果是最后一条消息，调用_syncStateWithHistory同步变量状态
+              await this._syncStateWithHistory(fullHistory);
+            } else {
+              // 如果不是最后一条消息，只保存历史，不更新变量
+              await this.saveChatHistoryToExtra(fullHistory, null);
+            }
 
             // 刷新查看器
             await this.refreshChatHistoryViewer(modal, chatHistory);
+
+            // 🔥 如果更新的是最后一条消息，更新UI以反映变量状态的变化
+            if (messageIndex === fullHistory.length - 1) {
+              const lastMessage = fullHistory[fullHistory.length - 1];
+              if (lastMessage && lastMessage.variableState) {
+                this.currentMvuState = JSON.parse(JSON.stringify(lastMessage.variableState));
+                if (lastMessage.variableState.stat_data) {
+                  this.renderUI(lastMessage.variableState.stat_data);
+                }
+              }
+            }
 
             console.log('✅ 消息已更新');
           } catch (error) {
@@ -15671,112 +15703,70 @@
         // 新增：重新生成AI回答 - 先返回上一步，然后重新发送
         async performReroll() {
           try {
-            // 🔥 第一步：先返回上一步（恢复到用户发送消息之前的状态）
-            if (typeof getChatMessages === 'undefined' || typeof TavernHelper === 'undefined') {
+            // 🔥 第一步：删除最后一条AI消息（参考返回上一步的逻辑）
+            const chatHistory = await this.loadChatHistoryFromExtra();
+
+            // 检查是否是第一条消息（开局）
+            if (chatHistory.length <= 1) {
               if (typeof showTemporaryMessage === 'function') {
-                showTemporaryMessage('重新生成功能需要Tavern Helper支持');
+                showTemporaryMessage('开局第一条消息，无法重新生成');
               }
               return;
             }
 
-            // 获取当前会话的自动存档
-            const chatId = TavernHelper?.chatId || 'default';
-            const autoSaveKey = `teresen_auto_save_${chatId}`;
-            const autoSaveData = localStorage.getItem(autoSaveKey);
-
-            if (!autoSaveData) {
+            // 检查最后一条消息是否是AI回复
+            const lastMessage = chatHistory[chatHistory.length - 1];
+            if (lastMessage.role !== 'assistant') {
               if (typeof showTemporaryMessage === 'function') {
-                showTemporaryMessage('没有找到自动存档，无法重新生成');
+                showTemporaryMessage('最后一条消息不是AI回复，无法重新生成');
               }
               return;
             }
 
-            const autoSaves = JSON.parse(autoSaveData);
-            // 获取上一次的自动存档（auto_save_slot_1）- 这是用户发送消息之前的状态
-            const previousSave = autoSaves['auto_save_slot_1'];
+            // 找到上一条用户输入
+            let lastUserInput = null;
+            for (let i = chatHistory.length - 2; i >= 0; i--) {
+              if (chatHistory[i].role === 'user') {
+                lastUserInput = chatHistory[i].content;
+                break;
+              }
+            }
 
-            if (!previousSave) {
+            if (!lastUserInput) {
               if (typeof showTemporaryMessage === 'function') {
-                showTemporaryMessage('没有上一次的自动存档，无法重新生成');
+                showTemporaryMessage('没有找到上一次的用户输入');
               }
               return;
             }
 
-            // 🔥 恢复上一次的自动存档状态（用户发送消息之前的状态）
-            if (previousSave.snapshot_data && previousSave.snapshot_data.mvu_data) {
-              this.currentMvuState = previousSave.snapshot_data.mvu_data;
-              this.renderUI(this.currentMvuState.stat_data);
-            }
+            // 删除最后一条消息（AI回复）
+            const updatedHistory = chatHistory.slice(0, -1);
 
-            // 🔥 恢复聊天历史到extra.teresen_chat（恢复到用户发送消息之前的状态）
-            // 参考分析2.js的方式：保存到最后一条消息的extra.teresen_chat，而不是0层消息
-            if (typeof SillyTavern !== 'undefined' && SillyTavern.chat && SillyTavern.chat.length > 0) {
-              const lastMessage = SillyTavern.chat[SillyTavern.chat.length - 1];
-              if (!lastMessage.extra) {
-                lastMessage.extra = {};
-              }
+            // 🔥 调用_syncStateWithHistory同步变量状态（从删除后的最后一条消息获取variableState）
+            await this._syncStateWithHistory(updatedHistory);
 
-              // 如果有timeline_history，恢复完整历史
-              if (previousSave.timeline_history && Array.isArray(previousSave.timeline_history)) {
-                lastMessage.extra.teresen_chat = previousSave.timeline_history.map(snapshot => ({
-                  role: 'assistant',
-                  content: snapshot.message || '',
-                  id: snapshot.message_id || `snapshot_${Date.now()}`,
-                  timestamp: snapshot.timestamp || Date.now(),
-                  variableState: snapshot.data || null,
-                }));
-              } else if (previousSave.message_content) {
-                // 兼容旧格式：只有单条消息
-                lastMessage.extra.teresen_chat = [
-                  {
-                    role: 'assistant',
-                    content: previousSave.message_content,
-                    id: 'load_' + Date.now(),
-                    timestamp: Date.now(),
-                    variableState: previousSave.snapshot_data?.mvu_data || null,
-                  },
-                ];
-              }
-
-              // 只更新data字段，不更新message字段
-              if (previousSave.snapshot_data && previousSave.snapshot_data.mvu_data) {
-                lastMessage.data = previousSave.snapshot_data.mvu_data;
-              }
-
-              // 保存到extra.teresen_chat
-              if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
-                await SillyTavern.saveChat();
-                console.log('✅ 已恢复聊天消息到extra.teresen_chat（用户发送消息之前的状态）');
-              } else if (typeof TavernHelper !== 'undefined' && TavernHelper.setChatMessages) {
-                await TavernHelper.setChatMessages([lastMessage], { refresh: 'none' });
-                console.log('✅ 已恢复聊天消息到extra.teresen_chat（未更新message字段）');
+            // 更新UI
+            const newLastMessage = updatedHistory[updatedHistory.length - 1];
+            if (newLastMessage && newLastMessage.variableState) {
+              this.currentMvuState = JSON.parse(JSON.stringify(newLastMessage.variableState));
+              if (newLastMessage.variableState.stat_data) {
+                this.renderUI(newLastMessage.variableState.stat_data);
               }
             }
 
-            // 🔥 强制更新界面
+            // 强制更新界面
             await this.updateInterface();
 
-            // 🔥 第二步：获取上次的提示词并重新发送
-            const lastPrompt = this.lastSentPrompt;
-
-            if (!lastPrompt) {
-              if (typeof showTemporaryMessage === 'function') {
-                showTemporaryMessage('没有找到上次的提示词！');
-              }
-              return;
-            }
-
-            // 设置输入框的值（只设置用户输入部分，不包含指令）
+            // 🔥 第二步：重新发送上一次用户输入
             const actionInput = document.getElementById('action-input');
             if (actionInput) {
-              // 从lastSentPrompt中提取用户输入部分
-              const userInputMatch = lastPrompt.match(/<userinput>\n([\s\S]*?)\n<\/userinput>/);
-              if (userInputMatch) {
-                actionInput.value = userInputMatch[1].trim();
-              } else {
-                // 如果没有userinput标签，直接使用整个内容
-                actionInput.value = lastPrompt;
+              // 提取用户输入内容（如果有content标签，提取标签内容）
+              let userInputContent = lastUserInput;
+              const contentMatch = lastUserInput.match(/<content>([\s\S]*?)<\/content>/s);
+              if (contentMatch) {
+                userInputContent = contentMatch[1].trim();
               }
+              actionInput.value = userInputContent;
             }
 
             // 重新提交
@@ -15817,109 +15807,44 @@
             });
           }
 
-          // 返回按钮 - 返回到用户发送消息之前的状态
+          // 🔥 返回按钮 - 删除最后一条AI消息并回退变量状态
           const btnBack = document.getElementById('btn-back');
           if (btnBack) {
+            // 初始检查并设置按钮状态
+            this.updateBackRerollButtonsState();
+
             btnBack.addEventListener('click', async () => {
               try {
-                if (typeof TavernHelper === 'undefined') {
+                // 从extra.teresen_chat加载完整历史
+                const chatHistory = await this.loadChatHistoryFromExtra();
+
+                // 检查是否是第一条消息（开局）
+                if (chatHistory.length <= 1) {
                   if (typeof showTemporaryMessage === 'function') {
-                    showTemporaryMessage('返回功能需要Tavern Helper支持');
+                    showTemporaryMessage('开局第一条消息，无法返回');
                   }
                   return;
                 }
 
-                // 获取当前会话的自动存档
-                const chatId = TavernHelper?.chatId || 'default';
-                const autoSaveKey = `teresen_auto_save_${chatId}`;
-                const autoSaveData = localStorage.getItem(autoSaveKey);
+                // 删除最后一条消息（AI回复）
+                const updatedHistory = chatHistory.slice(0, -1);
 
-                if (!autoSaveData) {
-                  if (typeof showTemporaryMessage === 'function') {
-                    showTemporaryMessage('没有找到自动存档，无法返回');
-                  }
-                  return;
-                }
+                // 🔥 调用_syncStateWithHistory同步变量状态（从删除后的最后一条消息获取variableState）
+                await this._syncStateWithHistory(updatedHistory);
 
-                const autoSaves = JSON.parse(autoSaveData);
-                // 获取上一次的自动存档（auto_save_slot_1）- 这是用户发送消息之前的状态
-                const previousSave = autoSaves['auto_save_slot_1'];
-
-                if (!previousSave) {
-                  if (typeof showTemporaryMessage === 'function') {
-                    showTemporaryMessage('没有上一次的自动存档，无法返回');
-                  }
-                  return;
-                }
-
-                // 🔥 恢复上一次的自动存档状态（用户发送消息之前的状态）
-                if (previousSave.snapshot_data && previousSave.snapshot_data.mvu_data) {
-                  this.currentMvuState = previousSave.snapshot_data.mvu_data;
-                  this.renderUI(this.currentMvuState.stat_data);
-                }
-
-                // 🔥 恢复聊天历史到extra.teresen_chat（恢复到用户发送消息之前的状态）
-                // 参考分析2.js的方式：保存到最后一条消息的extra.teresen_chat，而不是0层消息
-                if (typeof SillyTavern !== 'undefined' && SillyTavern.chat && SillyTavern.chat.length > 0) {
-                  const lastMessage = SillyTavern.chat[SillyTavern.chat.length - 1];
-                  if (!lastMessage.extra) {
-                    lastMessage.extra = {};
-                  }
-
-                  // 优先使用timeline_history
-                  if (previousSave.timeline_history && Array.isArray(previousSave.timeline_history)) {
-                    lastMessage.extra.teresen_chat = previousSave.timeline_history.map(snapshot => ({
-                      role: 'assistant',
-                      content: snapshot.message || '',
-                      id: snapshot.message_id || `snapshot_${Date.now()}`,
-                      timestamp: snapshot.timestamp || Date.now(),
-                      variableState: snapshot.data || null,
-                    }));
-                  } else if (
-                    previousSave.snapshot_data &&
-                    previousSave.snapshot_data.chat_history &&
-                    Array.isArray(previousSave.snapshot_data.chat_history)
-                  ) {
-                    // 兼容旧格式：chat_history数组
-                    lastMessage.extra.teresen_chat = previousSave.snapshot_data.chat_history.map(msg => ({
-                      role: msg.role || 'assistant',
-                      content: msg.message || msg.content || '',
-                      id: msg.id || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                      timestamp: msg.timestamp || Date.now(),
-                      variableState: msg.data || null,
-                    }));
-                  } else if (previousSave.snapshot_data && previousSave.snapshot_data.message_content) {
-                    // 兼容旧格式：只有单条消息
-                    lastMessage.extra.teresen_chat = [
-                      {
-                        role: 'assistant',
-                        content: previousSave.snapshot_data.message_content,
-                        id: 'load_' + Date.now(),
-                        timestamp: Date.now(),
-                        variableState: previousSave.snapshot_data.mvu_data || null,
-                      },
-                    ];
-                  }
-
-                  // 只更新data字段，不更新message字段
-                  if (previousSave.snapshot_data && previousSave.snapshot_data.mvu_data) {
-                    lastMessage.data = previousSave.snapshot_data.mvu_data;
-                  }
-
-                  // 保存到extra.teresen_chat
-                  if (typeof SillyTavern !== 'undefined' && SillyTavern.saveChat) {
-                    await SillyTavern.saveChat();
-                    console.log('✅ 已恢复聊天历史到extra.teresen_chat（用户发送消息之前的状态）');
-                  } else if (typeof TavernHelper !== 'undefined' && TavernHelper.setChatMessages) {
-                    await TavernHelper.setChatMessages([lastMessage], { refresh: 'none' });
-                    console.log('✅ 已恢复聊天历史到extra.teresen_chat（未更新message字段）');
+                // 更新UI
+                const lastMessage = updatedHistory[updatedHistory.length - 1];
+                if (lastMessage && lastMessage.variableState) {
+                  this.currentMvuState = JSON.parse(JSON.stringify(lastMessage.variableState));
+                  if (lastMessage.variableState.stat_data) {
+                    this.renderUI(lastMessage.variableState.stat_data);
                   }
                 }
 
-                // 强制更新界面
+                // 强制更新界面（包括按钮状态）
                 await this.updateInterface();
 
-                console.log('✅ 已返回上一步，恢复到用户发送消息之前的状态');
+                console.log('✅ 已返回上一步，删除最后一条AI消息');
                 if (typeof showTemporaryMessage === 'function') {
                   showTemporaryMessage('已返回上一步');
                 }
@@ -15938,6 +15863,50 @@
             btnReroll.addEventListener('click', async () => {
               await this.performReroll();
             });
+          }
+        }
+
+        /**
+         * 🔥 更新返回和重新生成按钮的状态（根据聊天历史长度）
+         */
+        async updateBackRerollButtonsState() {
+          try {
+            const chatHistory = await this.loadChatHistoryFromExtra();
+            const btnBack = document.getElementById('btn-back');
+            const btnReroll = document.getElementById('btn-reroll');
+
+            // 如果是第一条消息（开局），禁用按钮
+            const isFirstMessage = chatHistory.length <= 1;
+
+            if (btnBack) {
+              if (isFirstMessage) {
+                btnBack.disabled = true;
+                btnBack.style.opacity = '0.5';
+                btnBack.style.cursor = 'not-allowed';
+                btnBack.title = '开局第一条消息，无法返回';
+              } else {
+                btnBack.disabled = false;
+                btnBack.style.opacity = '1';
+                btnBack.style.cursor = 'pointer';
+                btnBack.title = '返回';
+              }
+            }
+
+            if (btnReroll) {
+              if (isFirstMessage) {
+                btnReroll.disabled = true;
+                btnReroll.style.opacity = '0.5';
+                btnReroll.style.cursor = 'not-allowed';
+                btnReroll.title = '开局第一条消息，无法重新生成';
+              } else {
+                btnReroll.disabled = false;
+                btnReroll.style.opacity = '1';
+                btnReroll.style.cursor = 'pointer';
+                btnReroll.title = '重新生成';
+              }
+            }
+          } catch (error) {
+            console.error('更新按钮状态失败:', error);
           }
         }
       })();
