@@ -18217,6 +18217,20 @@
           left: 0 !important;
           width: 100vw !important;
           height: 100vh !important;
+          padding: 20px !important; /* 🔥 添加padding，让弹窗不贴边 */
+          box-sizing: border-box !important;
+        }
+
+        /* 🔥 全屏时card-display-modal-content的样式优化 */
+        #teresen-fullscreen-overlay #card-display-modal .rules-modal-content {
+          width: 100% !important;
+          max-width: calc(100vw - 40px) !important; /* 减去padding */
+          max-height: calc(100vh - 40px) !important; /* 减去padding */
+          margin: 0 !important;
+          border-radius: 16px !important;
+          box-shadow:
+            0 25px 50px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(139, 105, 20, 0.1) !important;
         }
 
         /* 🔥 物品弹窗特殊处理（保持原有定位） */
@@ -19978,10 +19992,13 @@
         .card-display-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-          gap: 15px;
-          padding: 20px;
+          gap: 18px; /* 🔥 增大间距，更美观 */
+          padding: 25px; /* 🔥 增加内边距 */
           max-height: 70vh;
           overflow-y: auto;
+          background: rgba(253, 251, 247, 0.3); /* 🔥 添加轻微背景色区分 */
+          border-radius: 12px;
+          margin: 15px;
         }
 
         /* 自定义滚动条样式 */
@@ -20092,18 +20109,26 @@
         .card-display-item {
           position: relative;
           aspect-ratio: 1;
-          border-radius: 8px;
+          border-radius: 12px; /* 🔥 更圆润的边角 */
           overflow: hidden;
           cursor: pointer;
-          transition: all 0.3s ease;
-          border: 2px solid rgba(139, 105, 20, 0.3);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          transition:
+            transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            box-shadow 0.3s ease,
+            border-color 0.3s ease; /* 🔥 添加边框过渡 */
+          background: #fff;
+          border: 2px solid rgba(139, 105, 20, 0.2); /* 🔥 添加边框 */
+          box-shadow:
+            0 4px 12px rgba(0, 0, 0, 0.1),
+            0 2px 4px rgba(139, 105, 20, 0.08); /* 🔥 更立体的阴影 */
         }
 
         .card-display-item:hover {
-          transform: translateY(-5px) scale(1.05);
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-          border-color: #8b6914;
+          transform: translateY(-4px) scale(1.03); /* 🔥 添加向上浮动效果 */
+          box-shadow:
+            0 8px 24px rgba(139, 105, 20, 0.25),
+            0 4px 8px rgba(0, 0, 0, 0.15); /* 🔥 更强的阴影效果 */
+          border-color: rgba(139, 105, 20, 0.5); /* 🔥 悬停时边框变深 */
         }
 
         .card-display-item img {
@@ -20111,6 +20136,11 @@
           height: 100%;
           object-fit: cover;
           display: block;
+          transition: transform 0.3s ease;
+        }
+
+        .card-display-item:hover img {
+          transform: scale(1.05); /* 🔥 图片稍微放大 */
         }
 
         /* 卡面展示模态框特殊样式 */
@@ -20118,6 +20148,32 @@
           max-width: 90%;
           width: 1200px;
           max-height: 90vh;
+          background: linear-gradient(135deg, #fdfbf7 0%, #f5f0e8 50%, #ede8dd 100%); /* 🔥 更丰富的渐变背景 */
+          border: 3px solid #8b6914;
+          border-radius: 16px; /* 🔥 更大的圆角 */
+          box-shadow:
+            0 25px 50px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(139, 105, 20, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5); /* 🔥 更立体的阴影 */
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* 🔥 card-display-modal-content的装饰效果 */
+        #card-display-modal .rules-modal-content::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(
+            90deg,
+            rgba(139, 105, 20, 0.8) 0%,
+            rgba(160, 130, 105, 0.9) 50%,
+            rgba(139, 105, 20, 0.8) 100%
+          );
+          z-index: 1;
         }
 
         #card-display-modal .rules-modal-body {
@@ -34026,3 +34082,4 @@
   - 只能在类脑、旅程二传
 ================================================================================
 -->
+
