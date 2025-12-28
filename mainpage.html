@@ -5238,7 +5238,7 @@
             // 获取原始尺寸和比例
             const computedStyle = window.getComputedStyle(panels);
             const originalWidth = parseFloat(computedStyle.width) || 1600;
-            const originalHeight = parseFloat(computedStyle.height) || 775;
+            const originalHeight = parseFloat(computedStyle.height) || 750;
             const originalAspectRatio = originalWidth / originalHeight;
 
             // 保存原始样式
@@ -5372,8 +5372,8 @@
             const widthByHeight = screenHeight * originalAspectRatio;
             const heightByWidth = screenWidth / originalAspectRatio;
 
-            // 🔥 电脑端默认140%缩放，即使超出屏幕也使用140%（不再自动调整为93%）
-            let initialScale = 1.4;
+            // 🔥 电脑端默认120%缩放
+            let initialScale = 1.2;
 
             // 限制初始缩放范围
             initialScale = Math.max(0.5, Math.min(2, initialScale));
@@ -17973,7 +17973,7 @@
 
           max-width: 1600px;
 
-          height: 775px;
+          height: 750px;
 
           margin: auto;
 
@@ -34019,4 +34019,3 @@
   - 只能在类脑、旅程二传
 ================================================================================
 -->
-
