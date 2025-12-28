@@ -5309,16 +5309,10 @@
               overlay.style.backgroundImage = 'none';
             }
 
-            // 🔥 使用右侧面板的缩放控制器（按钮形式：缩小、重置、放大）
-            const zoomControlsInline = document.getElementById('zoom-controls-inline');
+            // 🔥 初始化缩放按钮事件（使用右侧面板的按钮，不使用悬浮窗）
             const zoomOutBtn = document.getElementById('zoom-out-btn-inline');
             const zoomResetBtn = document.getElementById('zoom-reset-btn-inline');
             const zoomInBtn = document.getElementById('zoom-in-btn-inline');
-
-            if (!zoomOutBtn || !zoomResetBtn || !zoomInBtn) {
-              console.error('❌ 缩放控制器按钮未找到！');
-              return;
-            }
 
             // 🔥 电脑端默认120%缩放
             let currentScale = 1.2;
@@ -5328,7 +5322,7 @@
             const stepScale = 0.1;
 
             // 应用缩放的函数
-            const applyZoom = (scale) => {
+            const applyZoom = scale => {
               // 限制缩放范围
               scale = Math.max(minScale, Math.min(maxScale, scale));
               currentScale = scale;
@@ -5348,28 +5342,24 @@
               panels.style.flexShrink = '0'; // 🔥 防止被压缩
             };
 
-            // 绑定按钮事件
-            if (!zoomOutBtn.dataset.initialized) {
-              zoomOutBtn.dataset.initialized = 'true';
-              
-              // 缩小按钮
-              zoomOutBtn.addEventListener('click', () => {
+            // 绑定按钮事件（只在全屏时生效，使用右侧面板的按钮）
+            if (zoomOutBtn && zoomResetBtn && zoomInBtn) {
+              // 绑定事件监听器
+              zoomOutBtn.onclick = () => {
                 applyZoom(currentScale - stepScale);
-              });
+              };
 
-              // 重置按钮
-              zoomResetBtn.addEventListener('click', () => {
+              zoomResetBtn.onclick = () => {
                 applyZoom(defaultScale);
-              });
+              };
 
-              // 放大按钮
-              zoomInBtn.addEventListener('click', () => {
+              zoomInBtn.onclick = () => {
                 applyZoom(currentScale + stepScale);
-              });
-            }
+              };
 
-            // 应用初始缩放
-            applyZoom(currentScale);
+              // 应用初始缩放
+              applyZoom(currentScale);
+            }
 
             // 关闭按钮
             const closeBtn = document.createElement('button');
@@ -5432,15 +5422,7 @@
               box-sizing: border-box;
             `;
 
-            // 应用初始缩放（限制尺寸，不直接扩展）
-            const scaledWidth = originalWidth * initialScale;
-            const scaledHeight = originalHeight * initialScale;
-            panels.style.width = scaledWidth + 'px';
-            panels.style.height = scaledHeight + 'px';
-            panels.style.maxWidth = scaledWidth + 'px'; // 🔥 限制最大宽度，防止扩展
-            panels.style.maxHeight = scaledHeight + 'px'; // 🔥 限制最大高度，防止扩展
-            panels.style.minWidth = scaledWidth + 'px'; // 🔥 限制最小宽度
-            panels.style.minHeight = scaledHeight + 'px'; // 🔥 限制最小高度
+            // 应用初始缩放（限制尺寸，不直接扩展）- 默认120%缩放已经在applyZoom中应用了
             panels.style.position = 'relative';
             panels.style.margin = 'auto';
             panels.style.transformOrigin = 'center center';
@@ -5565,7 +5547,7 @@
             updateBtnState(btn);
             updateBtnState(document.getElementById('fullscreen-btn-right'));
 
-            console.log('🖥️ 进入全屏+缩放模式，初始缩放:', Math.round(initialScale * 100) + '%');
+            console.log('🖥️ 进入全屏+缩放模式，初始缩放: 120%');
           } catch (error) {
             console.error('❌ 进入全屏失败:', error);
             alert('全屏功能失败: ' + error.message);
@@ -23775,7 +23757,9 @@
                 "
                 onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'"
                 onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'"
-              >−</button>
+              >
+                −
+              </button>
               <button
                 id="zoom-reset-btn-inline"
                 title="重置"
@@ -23796,7 +23780,9 @@
                 "
                 onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'"
                 onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'"
-              >⌂</button>
+              >
+                ⌂
+              </button>
               <button
                 id="zoom-in-btn-inline"
                 title="放大"
@@ -23818,7 +23804,9 @@
                 "
                 onmouseover="this.style.background='rgba(139, 105, 20, 0.2)'; this.style.borderColor='rgba(139, 105, 20, 0.5)'"
                 onmouseout="this.style.background='rgba(139, 105, 20, 0.1)'; this.style.borderColor='rgba(139, 105, 20, 0.3)'"
-              >+</button>
+              >
+                +
+              </button>
             </div>
           </div>
 
