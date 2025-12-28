@@ -12422,20 +12422,11 @@
 
           let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
 
-          // 检查当前层级是否已有天赋
+          // 检查当前层级是否已有天赋（使用getAllVariables和getVariable）
           const levelChineseName = this.getLevelChineseName(level);
-          let currentTalent = null;
-          try {
-            if (typeof Mvu !== 'undefined' && Mvu.getMvuVariable) {
-              const mvuData = Mvu.getMvuData({ type: 'chat' });
-              currentTalent = Mvu.getMvuVariable(mvuData, `训练员.天赋.小天赋.${levelChineseName}`, {
-                default_value: null,
-              });
-            }
-          } catch (e) {
-            console.warn('获取当前层级天赋失败:', e);
-          }
-          const hasTalent = currentTalent && currentTalent !== '';
+          const variables = this.getAllVariables();
+          const currentTalent = this.getVariable(variables, `stat_data.训练员.天赋.小天赋.${levelChineseName}`, null);
+          const hasTalent = currentTalent && currentTalent !== null && currentTalent !== '';
 
           levelData.options.forEach((option, index) => {
             const isAcquired = this.isTalentAcquired(level, index);
@@ -12536,27 +12527,17 @@
           let majorTalent = '强化系（占有之爱）';
 
           try {
-            if (typeof Mvu !== 'undefined' && Mvu.getMvuVariable) {
-              const mvuData = Mvu.getMvuData({ type: 'chat' });
+            // 🔥 使用getAllVariables和getVariable获取大天赋
+            const variables = this.getAllVariables();
+            majorTalent = this.getVariable(variables, 'stat_data.训练员.天赋.大天赋.name', '强化系（占有之爱）');
 
-              // 🔥 不使用[0]索引，直接获取大天赋
-              majorTalent = Mvu.getMvuVariable(mvuData, '训练员.天赋.大天赋.name', { default_value: null });
-
-              // 如果获取失败，使用getAllVariables作为备用方案
-              if (!majorTalent || majorTalent === '' || majorTalent === '无') {
-                if (window.teresenDebug && typeof window.teresenDebug.getAllVariables === 'function') {
-                  const allVars = window.teresenDebug.getAllVariables();
-                  majorTalent = window.teresenDebug.getVariable(allVars, 'stat_data.训练员.天赋.大天赋.name', null);
-                }
-              }
-
-              // 如果所有方法都失败，使用默认值
-              if (!majorTalent || majorTalent === '' || majorTalent === '无') {
-                majorTalent = '强化系（占有之爱）';
-              }
+            // 如果获取失败，使用默认值
+            if (!majorTalent || majorTalent === '' || majorTalent === '无') {
+              majorTalent = '强化系（占有之爱）';
             }
           } catch (error) {
             console.warn('获取大天赋失败，使用默认值:', error);
+            majorTalent = '强化系（占有之爱）';
           }
 
           // 根据大天赋方向返回对应的天赋数据
@@ -12603,30 +12584,25 @@
 
         isTalentAcquired(level, optionIndex) {
           try {
-            if (typeof Mvu !== 'undefined' && Mvu.getMvuVariable) {
-              const mvuData = Mvu.getMvuData({ type: 'chat' });
+            // 🔥 使用getAllVariables和getVariable获取变量
+            const variables = this.getAllVariables();
+            const levelChineseName = this.getLevelChineseName(level);
+            const currentTalent = this.getVariable(variables, `stat_data.训练员.天赋.小天赋.${levelChineseName}`, null);
 
-              const levelChineseName = this.getLevelChineseName(level);
-
-              const currentTalent = Mvu.getMvuVariable(mvuData, `训练员.天赋.小天赋.${levelChineseName}`, {
-                default_value: null,
-              });
-
-              if (currentTalent) {
-                const levelData = this.getTalentData(level);
-
-                if (levelData && levelData.options[optionIndex]) {
-                  // 现在注入的是描述，所以比较描述内容
-
-                  return currentTalent === levelData.options[optionIndex].description;
-                }
+            if (currentTalent && currentTalent !== null && currentTalent !== '') {
+              const levelData = this.getTalentData(level);
+              if (levelData && levelData.options[optionIndex]) {
+                // 比较描述内容
+                return (
+                  currentTalent === levelData.options[optionIndex].description ||
+                  currentTalent === levelData.options[optionIndex].title
+                );
               }
             }
 
             return false;
           } catch (error) {
             console.error('检查天赋状态失败:', error);
-
             return false;
           }
         }
@@ -12639,115 +12615,29 @@
 
             if (!levelData || !levelData.options[optionIndex]) {
               console.error('❌ 天赋数据不存在:', { level, optionIndex });
-
               return;
             }
 
             const option = levelData.options[optionIndex];
-
             console.log('📋 选择的天赋:', option);
 
-            // 检查MVU API是否可用
-
-            if (typeof Mvu === 'undefined') {
-              console.error('❌ MVU对象未定义');
-
-              await this.showFullscreenAlert('MVU系统未加载，请刷新页面重试', { title: '提示', icon: '⚠️' });
-
-              return;
-            }
-
-            if (!Mvu.getMvuData || !Mvu.setMvuVariable || !Mvu.replaceMvuData) {
-              console.error('❌ MVU API函数不存在:', {
-                getMvuData: !!Mvu.getMvuData,
-
-                setMvuVariable: !!Mvu.setMvuVariable,
-
-                replaceMvuData: !!Mvu.replaceMvuData,
-              });
-
-              await this.showFullscreenAlert('MVU API不完整，请刷新页面重试', { title: '提示', icon: '⚠️' });
-
-              return;
-            }
-
-            // 辅助函数：确保mvuData有正确的$internal结构
-            const ensureMvuInternal = mvuData => {
-              if (!mvuData) return false;
-
-              // 确保stat_data存在
-              if (!mvuData.stat_data) {
-                mvuData.stat_data = {};
-              }
-
-              // 确保display_data和delta_data存在
-              if (!mvuData.display_data) {
-                mvuData.display_data = {};
-              }
-              if (!mvuData.delta_data) {
-                mvuData.delta_data = {};
-              }
-
-              // 创建$internal，指向display_data和delta_data
-              if (!mvuData.stat_data.$internal) {
-                mvuData.stat_data.$internal = {
-                  display_data: mvuData.display_data,
-                  delta_data: mvuData.delta_data,
-                };
-                console.log('✅ 已初始化$internal属性');
-              } else {
-                // 如果已存在，确保指向正确的对象
-                mvuData.stat_data.$internal.display_data = mvuData.display_data;
-                mvuData.stat_data.$internal.delta_data = mvuData.delta_data;
-              }
-
-              return true;
-            };
-
-            // 获取MVU数据
-
-            const mvuData = Mvu.getMvuData({ type: 'chat' });
-
-            console.log('📊 MVU数据获取成功:', mvuData ? '是' : '否');
-            console.log('📊 MVU数据结构:', {
-              hasStatData: !!mvuData?.stat_data,
-              hasDisplayData: !!mvuData?.display_data,
-              hasDeltaData: !!mvuData?.delta_data,
-              hasInternal: !!mvuData?.stat_data?.$internal,
-              mvuDataKeys: mvuData ? Object.keys(mvuData) : [],
-            });
-
-            // 确保stat_data有$internal属性（MVU beta需要）
-            if (!ensureMvuInternal(mvuData)) {
-              console.error('❌ MVU数据初始化失败');
-              await this.showFullscreenAlert('MVU数据初始化失败，请刷新页面重试', { title: '提示', icon: '⚠️' });
-              return;
-            }
-
-            // 检查层级是否已有选择
-
+            // 🔥 使用getAllVariables和getVariable获取变量（参考其他变量获取方式）
+            const variables = this.getAllVariables();
             const levelChineseName = this.getLevelChineseName(level);
 
-            const currentTalent = Mvu.getMvuVariable(mvuData, `训练员.天赋.小天赋.${levelChineseName}`, {
-              default_value: null,
-            });
-
+            // 检查层级是否已有选择
+            const currentTalent = this.getVariable(variables, `stat_data.训练员.天赋.小天赋.${levelChineseName}`, null);
             console.log('🔍 当前层级天赋:', { levelChineseName, currentTalent });
 
-            if (currentTalent && currentTalent !== '') {
+            if (currentTalent && currentTalent !== null && currentTalent !== '') {
               if (typeof showTemporaryMessage === 'function') {
                 showTemporaryMessage(`该层级已有选择：${currentTalent}，每个层级只能选择一个天赋！`);
               }
-
               return;
             }
 
-            // 检查结晶是否足够
-
+            // 检查结晶是否足够（使用和updateTrainerStatus相同的方式）
             const cost = this.getTalentCost(level);
-
-            // 使用和updateTrainerStatus相同的方式读取结晶
-            const variables = this.getAllVariables();
             const crystalsValue = this.getVariable(variables, 'stat_data.训练员.畸形情感结晶', 0);
             const currentCrystals = parseInt(crystalsValue) || 0;
 
@@ -12756,84 +12646,59 @@
             if (currentCrystals < cost) {
               await this.showFullscreenAlert(`结晶不足！需要 ${cost} 个结晶，当前只有 ${currentCrystals} 个`, {
                 title: '结晶不足',
-                icon: '🏆',
+                icon: '💎',
               });
-
               return;
             }
 
             // 确认选择
-
             const confirmed = await this.showFullscreenConfirm(
-              `确定要获得天赋 "${option.title}" 吗？\n\n描述: ${option.description}\n\n效果: ${option.effects}\n\n消耗: ${cost} 个结晶`,
-              { title: '获得天赋', icon: '✨', confirmText: '获得', cancelText: '取消' },
+              `确定要解锁天赋 "${option.title}" 吗？\n\n描述: ${option.description}\n\n效果: ${option.effects}\n\n消耗: ${cost} 个结晶`,
+              { title: '解锁天赋', icon: '✨', confirmText: '解锁', cancelText: '取消' },
             );
 
             if (!confirmed) return;
 
-            console.log('✅ 用户确认选择，开始注入...');
+            console.log('✅ 用户确认选择，准备发送到聊天框...');
 
-            // 扣除结晶
-
+            // 🔥 不再使用MVU直接扣除，而是发送消息到聊天框，让AI处理
             const newCrystals = currentCrystals - cost;
 
-            console.log('💰 扣除结晶:', { currentCrystals, cost, newCrystals });
+            // 构建消息内容：花费xx结晶，解锁什么层天赋，天赋效果是什么
+            const levelNameMap = {
+              seed: '萌芽',
+              growth: '生长',
+              mutation: '畸变',
+              authority: '权柄',
+              abyss: '深渊',
+            };
+            const levelDisplayName = levelNameMap[level] || level;
 
-            await Mvu.setMvuVariable(mvuData, '训练员.畸形情感结晶', newCrystals, {
-              reason: '天赋消耗',
+            const skillUnlockMessage = `花费${cost}个畸形情感结晶，解锁${levelDisplayName}层天赋【${option.title}】，天赋效果：${option.effects}。天赋描述：${option.description}。剩余结晶：${newCrystals}个。`;
 
-              is_recursive: true,
-            });
-
-            console.log('✅ 结晶扣除成功');
-
-            // 不再注入到MVU，改为发送到聊天（使用handleActionSubmit，跟快捷行动一样）
-            const talentPath = `训练员.天赋.小天赋.${levelChineseName}`;
-            console.log('🎯 天赋解锁路径:', talentPath);
-
-            // 构建消息内容（跟快捷行动一样的格式）
-            const skillUnlockMessage = `【技能解锁】\n\n花费: ${cost} 个畸形情感结晶\n解锁技能: ${option.title}\n技能效果: ${option.effects}\n技能描述: ${option.description}\n\n剩余结晶: ${newCrystals} 个`;
-
-            // 使用handleActionSubmit发送到聊天（跟快捷行动一样）
+            // 🔥 使用handleActionSubmit发送到聊天框（跟快捷行动一样）
             try {
-              // 设置输入框的值
               const actionInput = document.getElementById('action-input');
               if (actionInput) {
                 actionInput.value = skillUnlockMessage;
                 // 调用handleActionSubmit发送消息
                 if (this.handleActionSubmit && typeof this.handleActionSubmit === 'function') {
-                  console.log('📤 通过handleActionSubmit发送技能解锁消息到聊天...');
+                  console.log('📤 通过handleActionSubmit发送天赋解锁消息到聊天框...');
                   await this.handleActionSubmit();
-                  console.log('✅ 技能解锁消息已发送到聊天');
+                  console.log('✅ 天赋解锁消息已发送到聊天框');
                 } else {
-                  console.warn('⚠️ handleActionSubmit方法不可用，使用备用方案');
-                  // 备用方案：直接发送消息
-                  if (
-                    'function' == typeof getChatMessages &&
-                    typeof TavernHelper !== 'undefined' &&
-                    TavernHelper.setChatMessages
-                  ) {
-                    const chatMessages = await getChatMessages(0);
-                    const newUserMessage = {
-                      role: 'user',
-                      name: 'You',
-                      message: skillUnlockMessage,
-                      is_user: true,
-                      send_date: Date.now(),
-                      data: this.getAllVariables(),
-                    };
-                    const updatedMessages = [newUserMessage, ...(chatMessages || [])];
-                    await TavernHelper.setChatMessages(updatedMessages, { refresh: 'full' });
-                    console.log('✅ 技能解锁消息已发送到聊天（备用方案）');
+                  console.error('❌ handleActionSubmit方法不可用');
+                  if (typeof showTemporaryMessage === 'function') {
+                    showTemporaryMessage('发送失败：handleActionSubmit方法不可用');
                   }
                 }
               } else {
-                console.warn('⚠️ 找不到action-input元素');
+                console.error('❌ 找不到action-input元素');
               }
             } catch (error) {
-              console.error('❌ 发送技能解锁消息失败:', error);
+              console.error('❌ 发送天赋解锁消息失败:', error);
               if (typeof showTemporaryMessage === 'function') {
-                showTemporaryMessage(`技能解锁消息发送失败: ${error.message}`);
+                showTemporaryMessage(`天赋解锁消息发送失败: ${error.message}`);
               }
             }
 
@@ -12900,37 +12765,28 @@
         }
 
         // 检查层级是否已解锁
-
         isLevelUnlocked(level) {
           // 第一层（萌芽）总是解锁的
-
           if (level === 'seed') return true;
 
           // 检查上一层级是否已注入天赋
-
           const previousLevel = this.getPreviousLevel(level);
-
           if (!previousLevel) return true;
 
           try {
-            if (typeof Mvu !== 'undefined' && Mvu.getMvuVariable) {
-              const mvuData = Mvu.getMvuData({ type: 'chat' });
+            // 🔥 使用getAllVariables和getVariable获取变量
+            const variables = this.getAllVariables();
+            const previousLevelChinese = this.getLevelChineseName(previousLevel);
+            const previousTalent = this.getVariable(
+              variables,
+              `stat_data.训练员.天赋.小天赋.${previousLevelChinese}`,
+              null,
+            );
 
-              const previousLevelChinese = this.getLevelChineseName(previousLevel);
-
-              const previousTalent = Mvu.getMvuVariable(mvuData, `训练员.天赋.小天赋.${previousLevelChinese}`, {
-                default_value: null,
-              });
-
-              // 如果上一层级有天赋注入，则当前层级解锁
-
-              return previousTalent && previousTalent !== '';
-            }
-
-            return false;
+            // 如果上一层级有天赋注入，则当前层级解锁
+            return previousTalent && previousTalent !== null && previousTalent !== '';
           } catch (error) {
             console.error('检查层级解锁状态失败:', error);
-
             return false;
           }
         }
@@ -27829,10 +27685,7 @@
                 emotion: { name: '情感操控', description: '基于变化系天赋的操控能力，可以操控目标的情感。' },
                 shadow: { name: '影子操控', description: '基于变化系天赋的影子能力，可以操控影子进行攻击。' },
                 // 放出系（牺牲之爱）
-                emotion_release: {
-                  name: '情绪释放',
-                  description: '基于放出系天赋的释放能力，可以释放强烈的情感能量。',
-                },
+                emotion_release: {name: '情绪释放',description: '基于放出系天赋的释放能力，可以释放强烈的情感能量。',},
                 sacrifice: { name: '生命献祭', description: '基于放出系天赋的献祭能力，可以牺牲生命或记忆获得力量。' },
                 phantom: { name: '分身具现', description: '基于放出系天赋的分身能力，可以具现化幻影分身。' },
                 // 操作系（控制之爱）
