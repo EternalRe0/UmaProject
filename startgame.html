@@ -14,36 +14,13 @@
 
       body {
         font-family: 'Times New Roman', 'SimSun', serif;
-        background: linear-gradient(
-          135deg,
-          rgba(220, 20, 60, 0.1) 0%,
-          rgba(34, 139, 34, 0.1) 50%,
-          rgba(255, 215, 0, 0.1) 100%
-        );
+        background: transparent;
         color: #2c1810;
         min-height: 100vh;
-        padding: 10px;
+        padding: 0;
+        margin: 0;
         position: relative;
         overflow-x: hidden;
-      }
-
-      /* 背景图片延迟加载，避免阻塞页面渲染 */
-      body::after {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: url('https://files.catbox.moe/jf55fj.jpg') center center / cover no-repeat;
-        z-index: -1;
-        opacity: 0;
-        transition: opacity 0.5s ease-in;
-        pointer-events: none;
-      }
-
-      body.bg-loaded::after {
-        opacity: 1;
       }
 
       /* 雪花动画 */
@@ -154,9 +131,10 @@
 
       .initial-content {
         text-align: center;
-        max-width: 1200px;
-        width: 95%;
+        width: 100%;
+        max-width: 100%;
         padding: 30px;
+        box-sizing: border-box;
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 240, 240, 0.95) 100%);
         border: 3px solid;
         border-image: linear-gradient(45deg, #dc143c, #228b22, #ffd700, #dc143c) 1;
@@ -502,21 +480,21 @@
       }
 
       .container {
-        max-width: 800px;
-        min-height: 80vh;
-        max-height: 90vh;
-        margin: 80px auto 20px auto;
+        width: 100%;
+        max-width: 100%;
+        min-height: 90vh;
+        max-height: 95vh;
+        margin: 0;
         background: rgba(244, 241, 232, 0.95);
-        border: 2px solid #8b4513;
-        border-radius: 8px;
+        border: none;
+        border-radius: 0;
         padding: 20px;
-        box-shadow:
-          0 4px 20px rgba(139, 69, 19, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        box-shadow: none;
         position: relative;
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        box-sizing: border-box;
       }
 
       .container::before {
@@ -696,6 +674,12 @@
         flex: 1;
       }
 
+      /* 游戏容器内的选择区域（8个选择页面）- 增高200px */
+      #gameContainer .content-area {
+        min-height: 500px;
+        max-height: 650px;
+      }
+
       /* 自定义滚动条样式 */
       .content-area::-webkit-scrollbar {
         width: 8px;
@@ -848,34 +832,6 @@
         box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
       }
 
-      .map-preview-container {
-        text-align: center;
-        margin-bottom: 15px; /* 从20px减小到15px */
-        padding: 8px; /* 从10px减小到8px */
-        background: rgba(255, 255, 255, 0.8);
-        border: 1px solid #8b4513;
-        border-radius: 8px;
-      }
-
-      .map-preview-btn {
-        background: linear-gradient(135deg, #8b4513, #654321);
-        color: #f4f1e8;
-        border: 2px solid #8b4513;
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
-      }
-
-      .map-preview-btn:hover {
-        background: linear-gradient(135deg, #654321, #8b4513);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(139, 69, 19, 0.4);
-      }
-
       .map-image {
         max-width: 100%;
         max-height: 70vh;
@@ -991,16 +947,18 @@
       .uma-content {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 15px;
         width: 100%;
       }
 
       .uma-info {
         flex: 1;
-        text-align: left;
+        text-align: center;
         display: flex;
         flex-direction: column;
         gap: 8px;
+        align-items: center;
       }
 
       .uma-card::before {
@@ -1113,7 +1071,7 @@
         opacity: 0;
       }
 
-      .uma-avatar[src] {
+      .uma-avatar.loaded {
         opacity: 1;
       }
 
@@ -1664,7 +1622,162 @@
         transform: none;
       }
 
-      /* 时间滑动条样式 */
+      /* 时钟表样式 */
+      .clock-face-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
+        padding: 30px;
+      }
+
+      .clock-face {
+        position: relative;
+        width: 400px;
+        height: 400px;
+        border: 8px solid #8b4513;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f4f1e8 0%, #e8e0d0 100%);
+        box-shadow:
+          0 8px 32px rgba(139, 69, 19, 0.4),
+          inset 0 4px 16px rgba(255, 255, 255, 0.8),
+          inset 0 -4px 16px rgba(139, 69, 19, 0.2);
+        margin: 0 auto;
+      }
+
+      .clock-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        background: #8b4513;
+        border-radius: 50%;
+        border: 3px solid #f4f1e8;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .clock-hour-marks {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+      }
+
+      .hour-mark {
+        position: absolute;
+        width: 4px;
+        height: 16px;
+        background: #8b4513;
+        border-radius: 2px;
+      }
+
+      .clock-hand-container {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+      }
+
+      .clock-hour-hand {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 8px;
+        height: 80px;
+        background: linear-gradient(to top, #8b4513, #654321);
+        transform-origin: bottom center;
+        transform: translate(-50%, -100%) rotate(0deg);
+        border-radius: 4px 4px 0 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        transition: transform 0.5s ease;
+        z-index: 5;
+      }
+
+      .clock-minute-hand {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 120px;
+        background: linear-gradient(to top, #654321, #8b4513);
+        transform-origin: bottom center;
+        transform: translate(-50%, -100%) rotate(0deg);
+        border-radius: 2px 2px 0 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        transition: transform 0.5s ease;
+        z-index: 6;
+      }
+
+      .clock-time-labels {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+      }
+
+      .time-label-clock {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        padding: 8px 12px;
+        background: rgba(244, 241, 232, 0.95);
+        border: 2px solid #8b4513;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #654321;
+        font-weight: bold;
+        font-size: 0.9em;
+        box-shadow: 0 2px 8px rgba(139, 69, 19, 0.2);
+        z-index: 8;
+      }
+
+      .time-label-clock:hover {
+        background: rgba(212, 175, 55, 0.2);
+        border-color: #d4af37;
+        transform: translate(-50%, -50%) scale(1.1);
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+      }
+
+      .time-label-clock.active {
+        background: linear-gradient(135deg, #d4af37, #b8860b);
+        border-color: #8b6914;
+        color: #f4f1e8;
+        transform: translate(-50%, -50%) scale(1.15);
+        box-shadow: 0 6px 16px rgba(212, 175, 55, 0.6);
+      }
+
+      .time-display-clock {
+        text-align: center;
+        padding: 20px;
+        background: rgba(244, 241, 232, 0.95);
+        border: 3px solid #8b4513;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(139, 69, 19, 0.3);
+        min-width: 300px;
+      }
+
+      .time-display-clock h3 {
+        margin: 0 0 15px 0;
+        color: #8b4513;
+        font-size: 1.5em;
+        font-weight: bold;
+      }
+
+      .time-display-clock p {
+        margin: 8px 0;
+        color: #654321;
+        font-size: 1em;
+        line-height: 1.6;
+      }
+
+      /* 时间滑动条样式（保留作为备用） */
       .time-slider-container {
         padding: 20px 15px;
         background: linear-gradient(135deg, #f4f1e8 0%, #e8e0d0 50%, #f4f1e8 100%);
@@ -1922,6 +2035,20 @@
         box-shadow: 0 4px 12px rgba(184, 134, 11, 0.4);
       }
 
+      .btn-create-empty {
+        background: #6b7280;
+        color: #f4f1e8;
+        border: 2px solid #6b7280;
+        font-size: 0.9em;
+        padding: 8px 15px;
+      }
+
+      .btn-create-empty:hover {
+        background: #4b5563;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+      }
+
       .btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
@@ -2030,6 +2157,284 @@
         height: 32px;
         -webkit-appearance: none;
         appearance: none;
+      }
+
+      /* 身份证风格总结 */
+      .id-card-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .id-card {
+        width: 100%;
+        max-width: 600px;
+        background: linear-gradient(135deg, #f4f1e8 0%, #e8e0d0 100%);
+        border: 4px solid #8b4513;
+        border-radius: 16px;
+        box-shadow:
+          0 8px 32px rgba(139, 69, 19, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .id-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 8px;
+        background: linear-gradient(90deg, #dc143c, #228b22, #ffd700, #dc143c);
+      }
+
+      .id-card-header {
+        background: linear-gradient(135deg, #8b4513 0%, #654321 100%);
+        color: #f4f1e8;
+        padding: 20px;
+        text-align: center;
+        border-bottom: 3px solid #d4af37;
+      }
+
+      .id-card-title {
+        font-size: 1.8em;
+        font-weight: bold;
+        margin-bottom: 5px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .id-card-subtitle {
+        font-size: 0.9em;
+        letter-spacing: 2px;
+        opacity: 0.9;
+      }
+
+      .id-card-body {
+        display: flex;
+        padding: 25px;
+        gap: 25px;
+      }
+
+      .id-card-left {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .id-card-photo {
+        width: 120px;
+        height: 150px;
+        background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+        border: 3px solid #8b4513;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+      }
+
+      .id-card-photo-icon {
+        font-size: 4em;
+      }
+
+      .id-card-number {
+        font-size: 0.85em;
+        color: #654321;
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+
+      .id-card-right {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .id-card-row {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(139, 69, 19, 0.2);
+      }
+
+      .id-card-row:last-child {
+        border-bottom: none;
+      }
+
+      .id-card-label {
+        flex: 0 0 80px;
+        font-weight: bold;
+        color: #8b4513;
+        font-size: 0.95em;
+      }
+
+      .id-card-value {
+        flex: 1;
+        color: #654321;
+        font-size: 1em;
+        text-align: right;
+      }
+
+      .id-card-footer {
+        background: rgba(139, 69, 19, 0.1);
+        padding: 15px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 2px solid rgba(139, 69, 19, 0.3);
+      }
+
+      .id-card-issuer {
+        font-weight: bold;
+        color: #8b4513;
+        font-size: 1.1em;
+      }
+
+      .id-card-date {
+        color: #654321;
+        font-size: 0.9em;
+      }
+
+      /* 聘书部分样式 */
+      .id-card-appointment {
+        border-top: 3px solid #8b4513;
+        margin-top: 20px;
+        padding-top: 25px;
+        background: linear-gradient(135deg, rgba(245, 230, 211, 0.3) 0%, rgba(232, 213, 183, 0.2) 100%);
+      }
+
+      .appointment-header {
+        text-align: center;
+        margin-bottom: 25px;
+        position: relative;
+      }
+
+      .appointment-decoration-top,
+      .appointment-decoration-bottom {
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #8b4513, transparent);
+        margin: 10px 0;
+      }
+
+      .appointment-title {
+        font-size: 2em;
+        font-weight: bold;
+        color: #8b4513;
+        letter-spacing: 8px;
+        text-shadow: 2px 2px 4px rgba(139, 69, 19, 0.3);
+      }
+
+      .appointment-content {
+        padding: 20px;
+        line-height: 2;
+        color: #654321;
+        font-size: 1em;
+      }
+
+      .appointment-text {
+        margin: 8px 0;
+        text-align: left;
+      }
+
+      .appointment-text-spacing {
+        margin-top: 20px;
+        margin-bottom: 25px;
+      }
+
+      .appointment-body {
+        text-align: center;
+        margin: 30px 0;
+        padding: 20px 0;
+        border-top: 1px solid rgba(139, 69, 19, 0.2);
+        border-bottom: 1px solid rgba(139, 69, 19, 0.2);
+      }
+
+      .appointment-body-text {
+        font-size: 1.3em;
+        font-weight: bold;
+        color: #8b4513;
+        letter-spacing: 4px;
+      }
+
+      .appointment-signature-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(139, 69, 19, 0.2);
+      }
+
+      .appointment-issuer {
+        text-align: left;
+        color: #654321;
+        font-size: 0.95em;
+        line-height: 1.8;
+      }
+
+      .appointment-signature {
+        text-align: right;
+        min-width: 200px;
+      }
+
+      .signature-label {
+        color: #654321;
+        font-size: 0.9em;
+        margin-bottom: 10px;
+      }
+
+      .signature-display {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #8b4513;
+        padding: 10px 0;
+        border-bottom: 2px solid #8b4513;
+        min-height: 40px;
+      }
+
+      .signature-input-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .signature-input {
+        padding: 10px 15px;
+        border: 2px solid #8b4513;
+        border-radius: 6px;
+        font-size: 1.1em;
+        color: #654321;
+        background: rgba(255, 255, 255, 0.9);
+        font-family: 'SimSun', 'Times New Roman', serif;
+      }
+
+      .signature-input:focus {
+        outline: none;
+        border-color: #d4af37;
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+      }
+
+      .signature-submit-btn {
+        padding: 8px 20px;
+        background: linear-gradient(135deg, #8b4513, #654321);
+        color: #f4f1e8;
+        border: 2px solid #8b4513;
+        border-radius: 6px;
+        font-size: 0.95em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .signature-submit-btn:hover {
+        background: linear-gradient(135deg, #654321, #8b4513);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
       }
 
       /* 移动端专用样式 */
@@ -3102,6 +3507,27 @@
           </div>
         </details>
 
+        <details class="info-panel" style="margin: 20px 0">
+          <summary style="cursor: pointer; padding: 10px; background: rgba(139, 69, 19, 0.1); border-radius: 6px">
+            <span>📝 创建空楼层</span>
+            <span style="float: right">▼</span>
+          </summary>
+          <div style="padding: 15px">
+            <p style="margin-bottom: 15px; color: #654321; line-height: 1.6">
+              为了防止酒馆重置第0层导致存档丢失，请创建至少一个新楼层再开始游玩！
+            </p>
+            <div style="text-align: center">
+              <button
+                class="quick-preset-btn"
+                id="createEmptyLayerBtn"
+                title="创建空楼层：在SillyTavern中创建一个空的消息层，用于后续的消息发送"
+              >
+                📝 创建空楼层
+              </button>
+            </div>
+          </div>
+        </details>
+
         <div class="start-button-container">
           <button class="quick-preset-btn" id="quickPresetBtn" title="快速预选经典开局">⚡ 快速预选</button>
           <button class="quick-preset-btn" id="loadPresetBtn" title="加载已保存的开局" style="margin-left: 10px">
@@ -3114,7 +3540,7 @@
 
     <!-- 🔥 快速预选独立界面 -->
     <div class="initial-screen" id="quickPresetScreen" style="display: none">
-      <div class="initial-content" style="max-width: 1200px; width: 95%">
+      <div class="initial-content" style="width: 100%; max-width: 100%; box-sizing: border-box">
         <div class="initial-header">
           <h1>⚡ 快速预选开局</h1>
           <p class="subtitle">选择一个预设开局，快速开始你的训练员生涯</p>
@@ -3249,6 +3675,10 @@
           <div class="step-number">7</div>
           <div class="step-label">道具选择</div>
         </div>
+        <div class="step-item" data-step="8">
+          <div class="step-number">8</div>
+          <div class="step-label">确认总结</div>
+        </div>
       </div>
 
       <!-- 内容区域 -->
@@ -3286,15 +3716,6 @@
             <p class="map-subtitle">选择你的起始位置，包括学院内和学院外的地点，每个地点都有不同的机遇与挑战</p>
           </div>
           <div class="map-container">
-            <div class="map-preview-container">
-              <button
-                type="button"
-                class="map-preview-btn"
-                onclick="document.getElementById('mapModal').style.display = 'block';"
-              >
-                🗺️ 点击预览地图
-              </button>
-            </div>
             <div class="selection-grid" id="locationGrid">
               <!-- 地点卡片将通过JavaScript动态生成 -->
             </div>
@@ -3334,37 +3755,62 @@
             <div class="selection-mode">
               <button class="mode-button active" id="gachaMode">🎰 神秘抽奖</button>
               <button class="mode-button" id="selectMode">📋 自由选择</button>
-              <button class="mode-button" id="skipMode">⏭️ 跳过</button>
             </div>
 
             <!-- 抽奖模式 -->
             <div class="gacha-area" id="gachaArea">
-              <div class="gacha-description">
-                <p>🎲 让命运决定你的第一位伙伴！随机获得一位马娘</p>
-              </div>
-              <div class="gacha-buttons">
+              <div style="text-align: center; margin-bottom: 20px">
                 <button class="gacha-button" id="gachaButton">🎰 开启宝盒</button>
               </div>
-              <div class="gacha-result" id="gachaResult">
-                <!-- 抽奖结果将在这里显示 -->
+              <div class="uma-grid" id="gachaUmaGrid">
+                <!-- 抽奖马娘网格将通过JavaScript动态生成 -->
               </div>
             </div>
 
             <!-- 自选模式 -->
             <div class="select-area" id="selectArea" style="display: none">
-              <div class="select-description">
-                <p>💝 直接选择你心仪的马娘伙伴</p>
+              <!-- 搜索框和头像开关 -->
+              <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center">
+                <input
+                  type="text"
+                  id="umaSearchInput"
+                  placeholder="搜索马娘名字..."
+                  style="
+                    flex: 1;
+                    padding: 12px 15px;
+                    border: 2px solid #8b4513;
+                    border-radius: 8px;
+                    font-size: 1em;
+                    background: rgba(255, 255, 255, 0.95);
+                    color: #2c1810;
+                    box-sizing: border-box;
+                  "
+                />
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    color: #654321;
+                    font-size: 0.95em;
+                    white-space: nowrap;
+                    padding: 10px 15px;
+                    background: rgba(244, 241, 232, 0.8);
+                    border: 2px solid rgba(139, 69, 19, 0.3);
+                    border-radius: 8px;
+                  "
+                >
+                  <input
+                    type="checkbox"
+                    id="showUmaAvatarCheckbox"
+                    style="width: 18px; height: 18px; cursor: pointer; accent-color: #8b4513"
+                  />
+                  <span>显示头像</span>
+                </label>
               </div>
               <div class="uma-grid" id="umaGrid">
                 <!-- 马娘选择网格将通过JavaScript动态生成 -->
-              </div>
-            </div>
-
-            <!-- 跳过模式确认 -->
-            <div class="skip-area" id="skipArea" style="display: none">
-              <div class="skip-description">
-                <p>🚶‍♂️ 确定要跳过马娘伙伴选择吗？你将独自开始冒险</p>
-                <button class="confirm-skip-button" id="confirmSkip">确认跳过</button>
               </div>
             </div>
           </div>
@@ -3382,11 +3828,33 @@
             </div>
           </div>
         </div>
+
+        <!-- 步骤8: 确认总结 - 总结所有选择和聘书 -->
+        <div class="step-content" id="step8">
+          <div style="text-align: center; margin-bottom: 30px">
+            <h2 style="color: #8b4513; font-size: 2em; margin-bottom: 10px">📋 开局配置总结</h2>
+            <p style="color: #654321; font-size: 1.1em">请确认您的所有选择，确认无误后点击"开始游戏"</p>
+          </div>
+
+          <!-- 所有选择的总结 -->
+          <div
+            id="allSelectionsSummary"
+            style="
+              background: rgba(255, 255, 255, 0.8);
+              border-radius: 12px;
+              padding: 30px;
+              margin-bottom: 30px;
+              border: 2px solid rgba(139, 105, 20, 0.3);
+            "
+          >
+            <!-- 总结内容将通过JavaScript动态生成 -->
+          </div>
+        </div>
       </div>
 
       <!-- 按钮区域 -->
       <div class="button-area">
-        <button class="btn btn-prev" id="prevBtn" disabled>← 上一步</button>
+        <button class="btn btn-prev" id="prevBtn">← 上一步</button>
         <button class="btn btn-next" id="nextBtn">下一步 →</button>
         <button class="btn btn-start" id="startBtn" disabled>🚀 开始游戏</button>
       </div>
@@ -3509,7 +3977,7 @@
       class OpeningSelector {
         constructor() {
           this.currentStep = 1;
-          this.totalSteps = 7;
+          this.totalSteps = 8;
 
           this.selections = {
             talent: null,
@@ -3643,7 +4111,7 @@
           }
         }
 
-        // 初始化圣诞节音乐
+        // 初始化圣诞节音乐（默认关闭）
         initChristmasMusic() {
           const musicElement = document.getElementById('christmasMusic');
           if (!musicElement) {
@@ -3651,78 +4119,24 @@
             return;
           }
 
-          // 音乐状态
+          // 音乐状态 - 默认关闭
           this.musicStarted = false;
-          this.musicLooping = false;
+          this.musicPaused = true;
 
-          // 一开始就播放音乐（不循环）
-          const playPromise = musicElement.play();
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log('✅ 圣诞节音乐开始播放');
-                this.musicStarted = true;
-              })
-              .catch(error => {
-                console.warn('⚠️ 自动播放被阻止，等待用户交互:', error);
-                // 如果自动播放被阻止，等待用户交互
-              });
+          // 设置静音按钮初始状态
+          this.updateMuteButton();
+        }
+
+        // 更新静音按钮状态
+        updateMuteButton() {
+          const muteBtn = $('#muteBtn');
+          if (muteBtn.length) {
+            if (this.musicPaused || !this.musicStarted) {
+              muteBtn.html('🔇').attr('title', '播放音乐');
+            } else {
+              muteBtn.html('🔊').attr('title', '静音');
+            }
           }
-
-          // 监听用户交互事件，第一次交互后开始循环播放
-          const startLooping = () => {
-            if (!this.musicLooping && this.musicStarted) {
-              musicElement.loop = true;
-              this.musicLooping = true;
-              console.log('🔄 音乐开始循环播放');
-              // 移除所有交互监听器，避免重复触发
-              document.removeEventListener('click', startLooping);
-              document.removeEventListener('touchstart', startLooping);
-              document.removeEventListener('keydown', startLooping);
-            }
-          };
-
-          // 监听各种用户交互事件
-          document.addEventListener('click', startLooping, { once: true });
-          document.addEventListener('touchstart', startLooping, { once: true });
-          document.addEventListener('keydown', startLooping, { once: true });
-
-          // 如果自动播放失败，在用户交互时重新播放
-          const handleUserInteraction = () => {
-            if (!this.musicStarted) {
-              const playPromise = musicElement.play();
-              if (playPromise !== undefined) {
-                playPromise
-                  .then(() => {
-                    console.log('✅ 用户交互后音乐开始播放');
-                    this.musicStarted = true;
-                    musicElement.loop = true;
-                    this.musicLooping = true;
-                  })
-                  .catch(error => {
-                    console.warn('⚠️ 播放失败:', error);
-                  });
-              }
-            }
-            startLooping();
-          };
-
-          document.addEventListener('click', handleUserInteraction, { once: true });
-          document.addEventListener('touchstart', handleUserInteraction, { once: true });
-          document.addEventListener('keydown', handleUserInteraction, { once: true });
-
-          // 初始化静音按钮状态
-          this.safeSetTimeout(() => {
-            const muteBtn = $('#muteBtn');
-            if (muteBtn.length) {
-              const isMuted = musicElement.muted;
-              if (isMuted) {
-                muteBtn.html('🔇').attr('title', '取消静音').addClass('muted');
-              } else {
-                muteBtn.html('🔊').attr('title', '静音').removeClass('muted');
-              }
-            }
-          }, 100);
         }
 
         // 停止音乐（在生成完成后调用）
@@ -3739,16 +4153,13 @@
         setupEventListeners() {
           // 初始界面按钮 - 多重绑定确保响应
           const $showGameBtn = $('#showGameBtn');
-          console.log('🔍 开始游戏按钮查找结果:', $showGameBtn.length, $showGameBtn);
 
           if ($showGameBtn.length === 0) {
-            console.error('❌ 找不到开始游戏按钮！');
             return;
           }
 
           // 1. 标准点击事件
           $showGameBtn.off('click').on('click', e => {
-            console.log('🎯 开始游戏按钮被点击');
             e.preventDefault();
             e.stopPropagation();
             this.showGameInterface();
@@ -3756,7 +4167,6 @@
 
           // 2. 触摸事件
           $showGameBtn.off('touchend').on('touchend', e => {
-            console.log('👆 开始游戏按钮被触摸');
             e.preventDefault();
             e.stopPropagation();
             this.showGameInterface();
@@ -3764,7 +4174,6 @@
 
           // 3. 鼠标事件
           $showGameBtn.off('mouseup').on('mouseup', e => {
-            console.log('🖱️ 开始游戏按钮鼠标抬起');
             e.preventDefault();
             e.stopPropagation();
             this.showGameInterface();
@@ -3786,16 +4195,12 @@
           this.bindTouchEvent('#nextBtn', () => this.nextStep());
           this.bindTouchEvent('#startBtn', () => this.startGame());
 
-          // 抽奖按钮 - 支持触摸
-          this.bindTouchEvent('#gachaButton', () => this.performGacha());
-
           // 模式选择按钮 - 支持触摸
           this.bindTouchEvent('#gachaMode', () => this.switchToGachaMode());
           this.bindTouchEvent('#selectMode', () => this.switchToSelectMode());
-          this.bindTouchEvent('#skipMode', () => this.switchToSkipMode());
 
-          // 跳过确认按钮 - 支持触摸
-          this.bindTouchEvent('#confirmSkip', () => this.confirmSkipUma());
+          // 抽奖按钮 - 支持触摸
+          this.bindTouchEvent('#gachaButton', () => this.performGacha());
 
           // 全屏按钮 - 支持触摸
           this.bindTouchEvent('#fullscreenBtn', () => this.toggleFullscreen());
@@ -3816,6 +4221,9 @@
           });
           this.bindTouchEvent('#loadPresetBtn', () => this.showLoadPresetMenu());
 
+          // 创建空楼层按钮（在初始界面）
+          this.bindTouchEvent('#createEmptyLayerBtn', () => this.createEmptyLayer());
+
           // 监听全屏状态变化
           this.safeAddEventListener(document, 'fullscreenchange', () => this.updateFullscreenButton());
           this.safeAddEventListener(document, 'webkitfullscreenchange', () => this.updateFullscreenButton());
@@ -3828,10 +4236,6 @@
           // 地图弹窗关闭 - 支持触摸
           this.bindTouchEvent('.map-modal-close', () => {
             document.getElementById('mapModal').style.display = 'none';
-          });
-
-          this.bindTouchEvent('.map-preview-btn', () => {
-            document.getElementById('mapModal').style.display = 'block';
           });
 
           // 添加窗口大小变化监听
@@ -3887,19 +4291,15 @@
 
             // 同时绑定click事件作为备用（某些设备可能需要）
             $(document).on('click', selector, e => {
-              console.log(`🔧 Click 事件触发: ${selector}`);
               // 只有在没有触摸事件的情况下才执行
               if (
                 !e.originalEvent ||
                 !e.originalEvent.sourceCapabilities ||
                 e.originalEvent.sourceCapabilities.firesTouchEvents !== true
               ) {
-                console.log(`✅ Click 事件有效，执行处理器`);
                 e.preventDefault();
                 e.stopPropagation();
                 handler(e);
-              } else {
-                console.log(`❌ Click 事件被跳过，来源于触摸`);
               }
             });
           } else {
@@ -3914,19 +4314,11 @@
 
         // 绑定卡片选择事件 - 强化版，确保所有设备都能工作
         bindCardSelectionEvents() {
-          console.log('🔧 开始绑定卡片选择事件...');
-          console.log('🔍 设备检测结果:', {
-            touchSupported: this.deviceDetector.touchSupported,
-            isMobile: this.deviceDetector.isMobile,
-            deviceType: this.deviceDetector.deviceType,
-          });
-
           // 先移除所有已存在的事件绑定，避免重复绑定
           $(document).off('click touchstart touchend touchcancel', '.selection-card');
 
           // 方法1: 强制绑定click事件（适用于所有设备）
           $(document).on('click', '.selection-card', e => {
-            console.log('🎯 卡片click事件触发:', $(e.currentTarget).data('id'));
             e.preventDefault();
             e.stopPropagation();
             this.handleCardSelection(e);
@@ -3934,13 +4326,11 @@
 
           // 方法2: 如果支持触摸，添加触摸事件优化
           if (this.deviceDetector.touchSupported) {
-            console.log('📱 绑定触摸事件...');
             let touchStarted = false;
             let touchStartTime = 0;
             let touchStartPos = { x: 0, y: 0 };
 
             $(document).on('touchstart', '.selection-card', e => {
-              console.log('👆 卡片touchstart事件触发');
               touchStarted = true;
               touchStartTime = Date.now();
               const touch = e.originalEvent.touches[0];
@@ -3952,7 +4342,6 @@
             });
 
             $(document).on('touchend', '.selection-card', e => {
-              console.log('🖐️ 卡片touchend事件触发');
               if (!touchStarted) return;
 
               const touchEndTime = Date.now();
@@ -3972,7 +4361,6 @@
 
               // 只有在短时间内且移动距离很小的情况下才认为是点击
               if (touchDuration < 500 && moveDistance < 10) {
-                console.log('✅ 触摸被识别为有效点击');
                 e.preventDefault();
                 e.stopPropagation();
 
@@ -3982,15 +4370,12 @@
                 }
 
                 this.handleCardSelection(e);
-              } else {
-                console.log('❌ 触摸被识别为滑动，忽略');
               }
 
               touchStarted = false;
             });
 
             $(document).on('touchcancel', '.selection-card', e => {
-              console.log('🚫 卡片touchcancel事件触发');
               $(e.currentTarget).removeClass('touching');
               touchStarted = false;
             });
@@ -4004,14 +4389,12 @@
               if (cardId) {
                 // 添加备用的onclick属性
                 element.onclick = e => {
-                  console.log('🔧 备用onclick事件触发:', cardId);
                   e.preventDefault();
                   e.stopPropagation();
                   this.handleCardSelection(e);
                 };
               }
             });
-            console.log('✅ 卡片事件绑定完成，共绑定', $('.selection-card').length, '个卡片');
           }, 100);
         }
 
@@ -4176,9 +4559,7 @@
 
         // 显示游戏界面
         showGameInterface() {
-          console.log('🚀 showGameInterface 方法被调用');
           const btn = $('#showGameBtn');
-          console.log('🔍 按钮元素:', btn.length, btn);
           btn.prop('disabled', true).html('<span class="loading-spinner"></span> 加载中...');
 
           // 模拟加载时间
@@ -6189,22 +6570,20 @@
           this.setActiveMode('gacha');
           $('#gachaArea').show();
           $('#selectArea').hide();
-          $('#skipArea').hide();
+          // 初始化时显示空状态，等待用户点击抽奖按钮
+          this.renderGachaUmaGrid(null);
         }
 
         switchToSelectMode() {
           this.setActiveMode('select');
           $('#gachaArea').hide();
           $('#selectArea').show();
-          $('#skipArea').hide();
           this.renderUmaGrid();
-        }
 
-        switchToSkipMode() {
-          this.setActiveMode('skip');
-          $('#gachaArea').hide();
-          $('#selectArea').hide();
-          $('#skipArea').show();
+          // 绑定头像显示开关事件
+          this.bindUmaAvatarToggle();
+          // 绑定搜索功能事件
+          this.bindUmaSearch();
         }
 
         setActiveMode(mode) {
@@ -6213,11 +6592,17 @@
         }
 
         // 渲染马娘选择网格
-        renderUmaGrid() {
+        renderUmaGrid(searchTerm = '') {
           const grid = $('#umaGrid');
           grid.empty();
 
-          this.umaMusumes.forEach(uma => {
+          // 过滤马娘（如果有搜索词）
+          const filteredUmas = searchTerm ? this.umaMusumes.filter(uma => uma.includes(searchTerm)) : this.umaMusumes;
+
+          // 获取头像显示状态
+          const showAvatar = $('#showUmaAvatarCheckbox').is(':checked');
+
+          filteredUmas.forEach(uma => {
             const avatar = this.getUmaAvatar(uma);
             const isSelected = this.selections.umaMusume === uma;
             const title = this.getUmaTitles()[uma] || '';
@@ -6227,7 +6612,7 @@
               <div class="uma-card ${isSelected ? 'selected' : ''}" data-uma="${uma}">
                 <div class="uma-content">
                   ${
-                    avatar
+                    avatar && showAvatar
                       ? `
                     <div class="uma-avatar-wrapper">
                       <div class="uma-avatar-placeholder">🐴</div>
@@ -6253,15 +6638,15 @@
             `);
 
             // 为图片添加加载完成事件处理
-            if (avatar) {
+            if (avatar && showAvatar) {
               const img = card.find('img.uma-avatar');
               const placeholder = card.find('.uma-avatar-placeholder');
 
               // 如果图片已缓存（complete状态），直接显示
-              if (img[0].complete && img[0].naturalHeight !== 0) {
+              if (img.length > 0 && img[0].complete && img[0].naturalHeight !== 0) {
                 img.addClass('loaded');
                 placeholder.css('opacity', '0');
-              } else {
+              } else if (img.length > 0) {
                 img.on('load', function () {
                   $(this).addClass('loaded');
                   placeholder.css('opacity', '0');
@@ -6284,6 +6669,32 @@
           });
         }
 
+        // 绑定头像显示开关事件
+        bindUmaAvatarToggle() {
+          const checkbox = $('#showUmaAvatarCheckbox');
+
+          checkbox.off('change').on('change', () => {
+            // 重新渲染网格
+            const searchTerm = $('#umaSearchInput').val().trim();
+            this.renderUmaGrid(searchTerm);
+          });
+        }
+
+        // 绑定搜索功能事件
+        bindUmaSearch() {
+          const searchInput = $('#umaSearchInput');
+          let searchTimeout = null;
+
+          searchInput.off('input').on('input', () => {
+            // 防抖处理
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+              const searchTerm = searchInput.val().trim();
+              this.renderUmaGrid(searchTerm);
+            }, 300);
+          });
+        }
+
         // 选择马娘
         selectUma(uma) {
           this.selections.umaMusume = uma;
@@ -6295,13 +6706,6 @@
           // 显示成功提示
           toastr.success(`已选择马娘：${uma}！`);
 
-          this.updateButtons();
-        }
-
-        // 确认跳过马娘选择
-        confirmSkipUma() {
-          this.selections.umaMusume = null;
-          toastr.info('已跳过马娘选择，你将独自开始冒险！');
           this.updateButtons();
         }
 
@@ -6750,6 +7154,9 @@
             case 7:
               this.renderItems();
               break;
+            case 8:
+              this.renderSummary();
+              break;
           }
 
           // 渲染完成后重新绑定事件，确保新生成的卡片能响应点击
@@ -6861,105 +7268,93 @@
           });
         }
 
-        // 渲染时间选择
+        // 渲染时间选择（时钟表风格）
         renderTimes() {
           const grid = $('#timeGrid');
           grid.empty();
 
-          // 创建滑动条容器
-          const sliderContainer = `
-            <div class="time-slider-container">
-              <div class="time-display">
-                <h3>⏰ 选择游戏开始时间</h3>
-                <p id="selectedTimeInfo">请拖动滑动条选择时间</p>
+          // 创建时钟表风格的容器
+          const clockContainer = `
+            <div class="clock-face-container">
+              <div class="clock-face">
+                <!-- 时钟中心 -->
+                <div class="clock-center"></div>
+                <!-- 时钟刻度 -->
+                <div class="clock-hour-marks">
+                  ${Array.from({ length: 12 }, (_, i) => {
+                    const angle = i * 30 - 90;
+                    const rad = (angle * Math.PI) / 180;
+                    const x = 50 + 45 * Math.cos(rad);
+                    const y = 50 + 45 * Math.sin(rad);
+                    return `<div class="hour-mark" style="left: ${x}%; top: ${y}%; transform: translate(-50%, -50%) rotate(${angle + 90}deg);"></div>`;
+                  }).join('')}
               </div>
-
-              <input type="range" class="time-slider" id="timeSlider" min="0" max="4" value="0" step="1" 
-                     inputmode="none" 
-                     autocomplete="off"
-                     spellcheck="false">
-
-              <div class="time-labels">
-                <div class="time-label" data-index="0">🌅<br>清晨</div>
-                <div class="time-label" data-index="1">☀️<br>上午</div>
-                <div class="time-label" data-index="2">🌞<br>午后</div>
-                <div class="time-label" data-index="3">🌆<br>傍晚</div>
-                <div class="time-label" data-index="4">🌙<br>深夜</div>
+                <!-- 指针容器 -->
+                <div class="clock-hand-container">
+                  <div class="clock-hour-hand" id="clockHourHand"></div>
+                  <div class="clock-minute-hand" id="clockMinuteHand"></div>
+                </div>
+                <!-- 时间标签 -->
+                <div class="clock-time-labels">
+                  <div class="time-label-clock" data-index="0" style="left: 50%; top: 10%;">🌅<br>清晨<br>06:00</div>
+                  <div class="time-label-clock" data-index="1" style="left: 85%; top: 50%;">☀️<br>上午<br>10:00</div>
+                  <div class="time-label-clock" data-index="2" style="left: 50%; top: 85%;">🌞<br>午后<br>14:00</div>
+                  <div class="time-label-clock" data-index="3" style="left: 15%; top: 50%;">🌆<br>傍晚<br>18:00</div>
+                  <div class="time-label-clock" data-index="4" style="left: 50%; top: 50%;">🌙<br>深夜<br>00:00</div>
+                </div>
+              </div>
+              <div class="time-display-clock">
+                <h3 id="selectedTimeTitle">⏰ 选择游戏开始时间</h3>
+                <p id="selectedTimeInfo">请点击时钟上的时间标签选择</p>
               </div>
             </div>
           `;
 
-          grid.append(sliderContainer);
+          grid.append(clockContainer);
 
           // 设置初始值
           this.updateTimeDisplay(0);
           this.selections.time = this.times[0].id; // 设置默认选择
+          this.updateClockHands(0);
 
           // 绑定事件
-          this.bindTimeSliderEvents();
+          this.bindClockEvents();
         }
 
-        // 绑定时间滑动条事件
-        bindTimeSliderEvents() {
-          const slider = $('#timeSlider');
-          const labels = $('.time-label');
-
-          // 防止输入法弹出
-          slider.on('focus blur click touchstart touchend', e => {
-            e.preventDefault();
-            e.target.blur(); // 确保不获得焦点
-          });
-
-          // 滑动条变化事件 - 支持触摸
-          slider.on('input change', e => {
-            e.preventDefault();
-            const value = parseInt(e.target.value);
-            this.selections.time = this.times[value].id;
-            this.updateTimeDisplay(value);
-            this.updateTimeLabels(value);
-            // 立即失去焦点防止输入法弹出
-            e.target.blur();
-          });
-
-          // 触摸设备的滑动条优化
-          if (this.deviceDetector.touchSupported) {
-            let isDragging = false;
-
-            slider.on('touchstart', e => {
-              isDragging = true;
-              e.preventDefault();
-            });
-
-            slider.on('touchmove', e => {
-              if (!isDragging) return;
-
-              const touch = e.originalEvent.touches[0];
-              const rect = slider[0].getBoundingClientRect();
-              const percent = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
-              const value = Math.round(percent * 4); // 0-4 的范围
-
-              slider.val(value);
-              this.selections.time = this.times[value].id;
-              this.updateTimeDisplay(value);
-              this.updateTimeLabels(value);
-
-              e.preventDefault();
-            });
-
-            slider.on('touchend', e => {
-              isDragging = false;
-              e.preventDefault();
-            });
-          }
-
-          // 标签点击事件 - 支持触摸
-          this.bindTouchEvent('.time-label', e => {
+        // 绑定时钟事件
+        bindClockEvents() {
+          // 时钟标签点击事件
+          this.bindTouchEvent('.time-label-clock', e => {
             const index = parseInt($(e.currentTarget).data('index'));
-            slider.val(index);
             this.selections.time = this.times[index].id;
             this.updateTimeDisplay(index);
-            this.updateTimeLabels(index);
+            this.updateClockLabels(index);
+            this.updateClockHands(index);
           });
+        }
+
+        // 更新时钟指针
+        updateClockHands(index) {
+          // 根据时间索引计算指针角度
+          // 0: 清晨 06:00 (30度) - 时针指向6点，分针指向12点
+          // 1: 上午 10:00 (300度) - 时针指向10点，分针指向12点
+          // 2: 午后 14:00 (210度) - 时针指向2点，分针指向12点
+          // 3: 傍晚 18:00 (180度) - 时针指向6点，分针指向12点
+          // 4: 深夜 00:00 (0度) - 时针指向12点，分针指向12点
+          const hourAngles = [180, 300, 60, 180, 0]; // 时针角度（相对于12点）
+          const hourAngle = hourAngles[index] || 0;
+
+          const hourHand = $('#clockHourHand');
+          const minuteHand = $('#clockMinuteHand');
+
+          hourHand.css('transform', `translate(-50%, -100%) rotate(${hourAngle}deg)`);
+          minuteHand.css('transform', `translate(-50%, -100%) rotate(0deg)`);
+        }
+
+        // 更新时钟标签状态
+        updateClockLabels(activeIndex) {
+          $('.time-label-clock').removeClass('active');
+          $(`.time-label-clock[data-index="${activeIndex}"]`).addClass('active');
         }
 
         // 更新时间显示
@@ -6972,38 +7367,18 @@
             极高: '#ef4444',
           };
 
+          $('#selectedTimeTitle').html(`⏰ ${time.icon} ${time.name}`);
           $('#selectedTimeInfo').html(`
-            <strong>${time.icon} ${time.name} (${time.time})</strong><br>
-            <span style="color: ${dangerColors[time.danger]};">危险等级: ${time.danger}</span><br>
+            <strong style="font-size: 1.2em;">${time.time}</strong><br>
+            <span style="color: ${dangerColors[time.danger]}; font-weight: bold;">危险等级: ${time.danger}</span><br>
             ${time.description}
           `);
         }
 
-        // 更新时间标签状态
+        // 更新时间标签状态（兼容旧方法）
         updateTimeLabels(activeIndex) {
           $('.time-label').removeClass('active');
           $(`.time-label[data-index="${activeIndex}"]`).addClass('active');
-        }
-
-        // 跳过抽奖方法
-        skipGacha() {
-          // 随机抽取三个不同的马娘
-          const shuffled = [...this.umaMusumes].sort(() => 0.5 - Math.random());
-          const threeUma = shuffled.slice(0, 3);
-
-          // 显示三个选项供选择
-          this.renderGachaOptions(threeUma);
-
-          // 显示跳过提示
-          $('#gachaResult').append(`
-            <div style="margin-top: 15px; padding: 10px; background: rgba(107, 114, 128, 0.1); border: 1px solid #6b7280; border-radius: 4px;">
-              <p style="margin: 0; color: #6b7280; font-size: 0.9em;">🎲 已随机生成三个选项，请选择一个</p>
-            </div>
-          `);
-
-          // 禁用两个按钮
-          $('#gachaButton').prop('disabled', true).text('已跳过');
-          $('#skipButton').prop('disabled', true).text('已跳过');
         }
 
         // 渲染马娘选择界面
@@ -7110,6 +7485,179 @@
           });
         }
 
+        // 渲染所有选择的总结（身份证+聘书风格）
+        renderSummary() {
+          const summaryDiv = $('#allSelectionsSummary');
+          if (!summaryDiv.length) {
+            return;
+          }
+
+          // 获取所有选择的数据
+          const selectedTalent = this.talents.find(t => t.id === this.selections.talent);
+          const selectedBackground = this.backgrounds.find(bg => bg.id === this.selections.background);
+          const selectedLocation = this.locations.find(loc => loc.id === this.selections.location);
+          const selectedTime = this.times.find(t => t.id === this.selections.time);
+          const selectedFestival = this.festivals.find(f => f.id === this.selections.festival);
+          const selectedItems = this.selections.items
+            .filter(id => id !== 'no_item')
+            .map(id => this.items.find(item => item.id === id))
+            .filter(item => item);
+
+          // 获取签名（如果有）
+          const signature = this.selections.signature || '';
+
+          // 身份证+聘书风格布局
+          let html = `
+            <div class="id-card-container">
+              <div class="id-card">
+                <!-- 身份证部分 -->
+                <div class="id-card-header">
+                  <div class="id-card-title">特雷森学院训练员证</div>
+                  <div class="id-card-subtitle">TREISEN ACADEMY TRAINER ID</div>
+                </div>
+                <div class="id-card-body">
+                  <div class="id-card-left">
+                    <div class="id-card-photo">
+                      <div class="id-card-photo-icon">${selectedTalent ? selectedTalent.icon : '🎭'}</div>
+                    </div>
+                    <div class="id-card-number">ID: ${Date.now().toString().slice(-8)}</div>
+                  </div>
+                  <div class="id-card-right">
+                    <div class="id-card-row">
+                      <span class="id-card-label">天赋</span>
+                      <span class="id-card-value">${selectedTalent ? selectedTalent.name : '未选择'}</span>
+                    </div>
+                    <div class="id-card-row">
+                      <span class="id-card-label">背景</span>
+                      <span class="id-card-value">${selectedBackground ? selectedBackground.name : '未选择'}</span>
+                    </div>
+                    <div class="id-card-row">
+                      <span class="id-card-label">地点</span>
+                      <span class="id-card-value">${selectedLocation ? selectedLocation.name : '未选择'}</span>
+                    </div>
+                    <div class="id-card-row">
+                      <span class="id-card-label">时间</span>
+                      <span class="id-card-value">${selectedTime ? `${selectedTime.name} (${selectedTime.time})` : '未选择'}</span>
+                    </div>
+                    <div class="id-card-row">
+                      <span class="id-card-label">节日</span>
+                      <span class="id-card-value">${selectedFestival ? selectedFestival.name : '未选择'}</span>
+                    </div>
+                    <div class="id-card-row">
+                      <span class="id-card-label">马娘</span>
+                      <span class="id-card-value">${this.selections.umaMusume || '未选择'}</span>
+                    </div>
+                    <div class="id-card-row">
+                      <span class="id-card-label">道具</span>
+                      <span class="id-card-value">${selectedItems.length > 0 ? selectedItems.map(item => item.icon).join(' ') : '无'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 聘书部分 -->
+                <div class="id-card-appointment">
+                  <div class="appointment-header">
+                    <div class="appointment-decoration-top"></div>
+                    <div class="appointment-title">聘书</div>
+                    <div class="appointment-decoration-bottom"></div>
+                  </div>
+                  <div class="appointment-content">
+                    <p class="appointment-text">十年寒窗终于金榜题名，</p>
+                    <p class="appointment-text">邮箱里的那封信烫着金漆，</p>
+                    <p class="appointment-text">闪着与你刚刚拿到的那块训练员徽章同样颜色的光芒。</p>
+                    <p class="appointment-text appointment-text-spacing">你用还在颤抖的手取下了上面的火漆————</p>
+                    <div class="appointment-body">
+                      <p class="appointment-body-text">兹聘请贵方担任我校训练员一职。</p>
+                    </div>
+                    <div class="appointment-signature-section">
+                      <div class="appointment-issuer">
+                        <p>日本中央特雷森学园理事长</p>
+                        <p>秋川弥生</p>
+                      </div>
+                      <div class="appointment-signature">
+                        <div class="signature-label">(署名处)：</div>
+                        ${
+                          signature
+                            ? `
+                          <div class="signature-display">${signature}</div>
+                        `
+                            : `
+                          <div class="signature-input-container">
+                            <input 
+                              type="text" 
+                              id="signatureInput" 
+                              class="signature-input" 
+                              placeholder="请输入您的名字（10个字符以内）"
+                              maxlength="10"
+                            />
+                            <button class="signature-submit-btn" id="signatureSubmitBtn">确认签名</button>
+                          </div>
+                        `
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="id-card-footer">
+                  <div class="id-card-issuer">日本中央特雷森学园</div>
+                  <div class="id-card-date">${new Date().toLocaleDateString('zh-CN')}</div>
+                </div>
+              </div>
+            </div>
+          `;
+
+          summaryDiv.html(html);
+
+          // 绑定签名提交事件
+          if (!signature) {
+            this.bindSignatureEvents();
+          }
+        }
+
+        // 绑定签名事件
+        bindSignatureEvents() {
+          const submitBtn = $('#signatureSubmitBtn');
+          const input = $('#signatureInput');
+
+          // 点击提交按钮
+          submitBtn.off('click').on('click', () => {
+            this.submitSignature();
+          });
+
+          // 回车键提交
+          input.off('keypress').on('keypress', e => {
+            if (e.which === 13) {
+              e.preventDefault();
+              this.submitSignature();
+            }
+          });
+        }
+
+        // 提交签名
+        submitSignature() {
+          const input = $('#signatureInput');
+          const signature = input.val().trim();
+
+          if (!signature) {
+            toastr.warning('请输入您的名字');
+            return;
+          }
+
+          if (signature.length > 10) {
+            toastr.warning('名字不能超过10个字符');
+            return;
+          }
+
+          // 保存签名
+          this.selections.signature = signature;
+
+          // 重新渲染总结（显示签名）
+          this.renderSummary();
+
+          toastr.success('签名成功！');
+        }
+
         // 处理卡片选择
         handleCardSelection(e) {
           const card = $(e.currentTarget);
@@ -7183,7 +7731,7 @@
         // 执行抽奖
         performGacha() {
           if (this.selections.umaMusume) {
-            toastr.info('已经抽奖过了');
+            toastr.info('已经选择过马娘了');
             return;
           }
 
@@ -7192,16 +7740,97 @@
 
           // 模拟抽奖动画
           this.safeSetTimeout(() => {
-            // 随机抽取三个不同的马娘
+            // 随机抽取3个不同的马娘
             const shuffled = [...this.umaMusumes].sort(() => 0.5 - Math.random());
-            const threeUma = shuffled.slice(0, 3);
+            const gachaUmas = shuffled.slice(0, 3);
 
-            // 显示三个选项供选择
-            this.renderGachaOptions(threeUma);
+            // 渲染抽奖结果
+            this.renderGachaUmaGrid(gachaUmas);
 
-            gachaBtn.prop('disabled', true).text('已抽奖');
+            gachaBtn.prop('disabled', false).text('🎰 重新抽奖');
             this.updateButtons();
-          }, 2000);
+          }, 1500);
+        }
+
+        // 渲染抽奖模式马娘网格（最大化展示）
+        renderGachaUmaGrid(gachaUmas = null) {
+          const grid = $('#gachaUmaGrid');
+          grid.empty();
+
+          // 如果没有提供马娘列表，显示空状态
+          if (!gachaUmas || gachaUmas.length === 0) {
+            grid.html(`
+              <div style="text-align: center; padding: 40px; color: #654321;">
+                <p style="font-size: 1.2em; margin-bottom: 20px;">🎰 点击上方按钮开始抽奖</p>
+                <p style="font-size: 0.9em; opacity: 0.7;">随机抽取3位马娘，选择你心仪的伙伴</p>
+              </div>
+            `);
+            return;
+          }
+
+          gachaUmas.forEach(uma => {
+            const avatar = this.getUmaAvatar(uma);
+            const isSelected = this.selections.umaMusume === uma;
+            const title = this.getUmaTitles()[uma] || '';
+
+            const card = $(`
+              <div class="uma-card ${isSelected ? 'selected' : ''}" data-uma="${uma}">
+                <div class="uma-content">
+                  ${
+                    avatar
+                      ? `
+                    <div class="uma-avatar-wrapper">
+                      <div class="uma-avatar-placeholder">🐴</div>
+                      <img 
+                        src="${avatar}" 
+                        alt="${uma}" 
+                        class="uma-avatar" 
+                        loading="lazy"
+                      >
+                      <div class="uma-avatar-frame">
+                        <img src="https://files.catbox.moe/jq9b8s.png" alt="头像框">
+                      </div>
+                    </div>
+                  `
+                      : ''
+                  }
+                  <div class="uma-info">
+                    <div class="uma-name">${uma}</div>
+                    ${title ? `<div class="uma-title">【${title}】</div>` : ''}
+                  </div>
+                </div>
+              </div>
+            `);
+
+            // 为图片添加加载完成事件处理
+            if (avatar) {
+              const img = card.find('img.uma-avatar');
+              const placeholder = card.find('.uma-avatar-placeholder');
+
+              if (img.length > 0 && img[0].complete && img[0].naturalHeight !== 0) {
+                img.addClass('loaded');
+                placeholder.css('opacity', '0');
+              } else if (img.length > 0) {
+                img.on('load', function () {
+                  $(this).addClass('loaded');
+                  placeholder.css('opacity', '0');
+                });
+                img.on('error', function () {
+                  $(this).hide();
+                  placeholder.css('opacity', '1');
+                });
+              }
+            }
+
+            // 绑定选择事件
+            card.on('click touchend', e => {
+              e.preventDefault();
+              e.stopPropagation();
+              this.selectUma(uma);
+            });
+
+            grid.append(card);
+          });
         }
 
         // 渲染马娘选择选项
@@ -7383,13 +8012,13 @@
           const nextBtn = $('#nextBtn');
           const startBtn = $('#startBtn');
 
-          // 上一步按钮：第一步时隐藏，其他步骤显示并根据条件启用/禁用
+          // 上一步按钮：第一步时显示"返回"文本，其他步骤显示"上一步"
           if (prevBtn.length) {
+            prevBtn.show();
             if (this.currentStep === 1) {
-              prevBtn.hide();
+              prevBtn.text('← 返回').prop('disabled', false);
             } else {
-              prevBtn.show();
-              prevBtn.prop('disabled', !canGoPrev);
+              prevBtn.text('← 上一步').prop('disabled', !canGoPrev);
             }
           }
 
@@ -7453,12 +8082,7 @@
                 (shouldHavePrev && !prevExists) || (shouldHaveNext && !nextExists) || (shouldHaveStart && !startExists);
 
               if (needsRepair) {
-                console.warn('🔧 检测到按钮状态异常，执行修复:', {
-                  currentStep: this.currentStep,
-                  isLastStep,
-                  should: { prev: shouldHavePrev, next: shouldHaveNext, start: shouldHaveStart },
-                  exists: { prev: prevExists, next: nextExists, start: startExists },
-                });
+                // 静默修复按钮状态，不输出console避免内存泄漏
                 this.updateButtons();
               }
             }
@@ -7511,7 +8135,10 @@
               // 允许跳过马娘选择（umaMusume 可以为 null）或已选择马娘
               return this.selections.umaMusume !== undefined;
             case 7:
-              // 最后一步：允许选择不带道具（items可以是空数组），总是返回true
+              // 允许选择不带道具（items可以是空数组），总是返回true
+              return true;
+            case 8:
+              // 最后一步：总结界面，总是返回true
               return true;
             default:
               return false;
@@ -7587,6 +8214,11 @@
             this.renderCurrentStep();
             this.updateProgress();
             this.updateButtons();
+          } else if (this.currentStep === 1) {
+            // 第一步时，返回初始界面
+            $('#gameContainer').fadeOut(800, () => {
+              $('#initialScreen').fadeIn(800);
+            });
           }
         }
 
@@ -7694,24 +8326,39 @@
           }
         }
 
-        // 切换静音状态
+        // 切换音乐播放状态（默认关闭，点击打开）
         toggleMute() {
           const musicElement = document.getElementById('christmasMusic');
-          const muteBtn = $('#muteBtn');
-
           if (!musicElement) {
             toastr.warning('未找到音乐元素');
             return;
           }
 
-          if (musicElement.muted) {
-            musicElement.muted = false;
-            muteBtn.html('🔊').attr('title', '静音').removeClass('muted');
-            toastr.success('音乐已开启');
+          if (this.musicPaused || !this.musicStarted) {
+            // 播放音乐
+            musicElement.loop = true;
+            const playPromise = musicElement.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  this.musicStarted = true;
+                  this.musicPaused = false;
+                  this.updateMuteButton();
+                  toastr.success('音乐已开启');
+                  console.log('✅ 圣诞节音乐开始播放');
+                })
+                .catch(error => {
+                  console.error('播放音乐失败:', error);
+                  toastr.error('播放音乐失败');
+                });
+            }
           } else {
-            musicElement.muted = true;
-            muteBtn.html('🔇').attr('title', '取消静音').addClass('muted');
-            toastr.info('音乐已静音');
+            // 暂停音乐
+            musicElement.pause();
+            this.musicPaused = true;
+            this.updateMuteButton();
+            toastr.info('音乐已暂停');
+            console.log('🔇 音乐已暂停');
           }
         }
 
@@ -10909,6 +11556,202 @@ ${
             throw error;
           }
         }
+
+        // 创建空楼层（参考分析.html）
+        async createEmptyLayer() {
+          try {
+            if (typeof createChatMessages === 'function') {
+              console.log('📝 正在创建空楼层...');
+              await createChatMessages([{ role: 'user', message: '<char>' }]);
+              console.log('✅ 空楼层已创建');
+              toastr.success('✅ 空楼层创建成功！', '创建空楼层', {
+                timeOut: 2000,
+              });
+            } else {
+              console.error('❌ createChatMessages 函数未找到');
+              toastr.error('创建空楼层失败: createChatMessages API 未找到');
+            }
+          } catch (error) {
+            console.error('❌ 创建空楼层失败:', error);
+            toastr.error('创建空楼层失败: ' + error.message);
+          }
+        }
+
+        // 显示签字系统（已整合到身份证中，此函数已废弃）
+        showSignatureSystem() {
+          // 聘书已经整合到身份证中，不再需要单独显示
+          return;
+
+          const html = `
+            <div style="
+              text-align: center;
+              color: #2d1810;
+              line-height: 1.8;
+              font-size: 1.1em;
+            ">
+              <p style="margin-bottom: 20px; font-size: 1.2em; font-weight: bold;">
+                十年寒窗终于金榜题名，
+              </p>
+              <p style="margin-bottom: 20px;">
+                邮箱里的那封信烫着金漆，
+              </p>
+              <p style="margin-bottom: 20px;">
+                闪着与你刚刚拿到的那块训练员徽章同样颜色的光芒。
+              </p>
+              <p style="margin-bottom: 30px;">
+                你用还在颤抖的手取下了上面的火漆————
+              </p>
+              
+              <div style="
+                background: rgba(255, 255, 255, 0.9);
+                border: 2px solid #8b4513;
+                border-radius: 8px;
+                padding: 30px;
+                margin: 30px 0;
+                text-align: center;
+              ">
+                <h2 style="
+                  color: #8b4513;
+                  font-size: 1.8em;
+                  margin-bottom: 20px;
+                  font-weight: bold;
+                ">聘书</h2>
+                <div style="
+                  color: #654321;
+                  font-size: 1em;
+                  line-height: 2;
+                  margin-bottom: 20px;
+                ">
+                  <p>…………</p>
+                  <p>…………</p>
+                  <p>…………</p>
+                  <p>…………</p>
+                  <p>…………</p>
+                  <p>…………</p>
+                  <p style="margin-top: 20px;">兹聘请贵方担任我校训练员一职。</p>
+                </div>
+                <div style="
+                  text-align: right;
+                  margin-top: 40px;
+                  color: #8b4513;
+                ">
+                  <p style="margin-bottom: 10px;">日本中央特雷森学园理事长</p>
+                  <p style="margin-bottom: 30px; font-weight: bold;">秋川弥生</p>
+                  <div style="
+                    text-align: left;
+                    margin-top: 40px;
+                    border-top: 2px solid #8b4513;
+                    padding-top: 20px;
+                  ">
+                    <p style="margin-bottom: 10px; color: #654321;">(署名处)：</p>
+                    <div style="
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                      margin-top: 15px;
+                    ">
+                      <input
+                        type="text"
+                        id="signatureInput"
+                        placeholder="在此输入您的名字（10个字符以内）"
+                        maxlength="10"
+                        style="
+                          flex: 1;
+                          padding: 10px;
+                          border: 2px solid #8b4513;
+                          border-radius: 4px;
+                          font-size: 1em;
+                          background: rgba(255, 255, 255, 0.95);
+                          color: #2d1810;
+                          font-family: 'Times New Roman', 'SimSun', serif;
+                        "
+                        onkeypress="if(event.key === 'Enter') { window.openingSelector && window.openingSelector.submitSignature(); }"
+                      />
+                      <button
+                        id="submitSignatureBtn"
+                        onclick="window.openingSelector && window.openingSelector.submitSignature();"
+                        style="
+                          padding: 10px 20px;
+                          background: #8b4513;
+                          color: #f4f1e8;
+                          border: 2px solid #8b4513;
+                          border-radius: 4px;
+                          cursor: pointer;
+                          font-size: 1em;
+                          font-weight: bold;
+                          transition: all 0.3s;
+                        "
+                        onmouseover="this.style.background='#654321'; this.style.transform='translateY(-2px)';"
+                        onmouseout="this.style.background='#8b4513'; this.style.transform='translateY(0)';"
+                      >
+                        确认签名
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+
+          container.html(html);
+
+          // 聚焦输入框
+          this.safeSetTimeout(() => {
+            $('#signatureInput').focus();
+          }, 100);
+        }
+
+        // 提交签名
+        submitSignature() {
+          const input = $('#signatureInput');
+          const signature = input.val().trim();
+
+          if (!signature) {
+            toastr.warning('请输入您的名字');
+            return;
+          }
+
+          if (signature.length > 10) {
+            toastr.warning('名字不能超过10个字符');
+            return;
+          }
+
+          // 保存签名（可以保存到localStorage或变量中）
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('trainer_signature', signature);
+            }
+            console.log('✅ 签名已保存:', signature);
+          } catch (error) {
+            console.warn('保存签名失败:', error);
+          }
+
+          // 显示签名确认
+          toastr.success(`签名成功：${signature}`, '签名确认', {
+            timeOut: 2000,
+          });
+
+          // 在输入框下方显示签名
+          const signatureDisplay = $(`
+            <div style="
+              margin-top: 15px;
+              padding: 10px;
+              border: 2px dashed #8b4513;
+              border-radius: 4px;
+              text-align: center;
+              color: #8b4513;
+              font-size: 1.2em;
+              font-weight: bold;
+              font-family: 'KaiTi', '楷体', cursive;
+            ">
+              ${signature}
+            </div>
+          `);
+
+          // 隐藏输入框和按钮
+          input.parent().hide();
+          signatureDisplay.insertAfter(input.parent());
+        }
       }
 
       // 页面加载完成后初始化
@@ -11736,4 +12579,5 @@ ${
     </script>
   </body>
 </html>
+
 
