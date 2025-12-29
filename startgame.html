@@ -3582,11 +3582,10 @@
         border-color: #ffeb3b;
       }
 
-      /* 快速预选界面 */
+      /* 快速预选界面 - 参考选地点页面布局 */
       #quickPresetScreen {
         position: relative;
-        overflow: visible;
-        min-height: 80vh;
+        overflow: hidden;
         width: 100%;
         max-width: 100%;
         display: flex;
@@ -3594,6 +3593,9 @@
         justify-content: center;
         padding: 20px;
         box-sizing: border-box;
+        /* 🔥 固定高度，内容可滚动，不影响其他页面 */
+        height: calc(100vh - 40px);
+        max-height: calc(100vh - 40px);
       }
 
       #quickPresetScreen .initial-content {
@@ -3601,9 +3603,40 @@
         z-index: 1;
         width: 100%;
         max-width: 100%;
-        min-height: auto;
+        height: 100%;
         padding: 30px;
         box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* 🔥 预选内容区域 - 可滚动，固定高度 */
+      #quickPresetContent {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 0;
+        padding-right: 10px;
+      }
+
+      #quickPresetContent::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      #quickPresetContent::-webkit-scrollbar-track {
+        background: #e8e0d0;
+        border-radius: 4px;
+      }
+
+      #quickPresetContent::-webkit-scrollbar-thumb {
+        background: #8b4513;
+        border-radius: 4px;
+        border: 1px solid #654321;
+      }
+
+      #quickPresetContent::-webkit-scrollbar-thumb:hover {
+        background: #654321;
       }
 
       /* 预选界面头部控制栏 */
@@ -11094,15 +11127,20 @@
 
           const presets = this.getQuickPresets();
 
-          // 提取所有分类（从group字段提取前缀，如"校外情境・社会身份" -> "校外情境"）
+          // 🔥 提取所有分类（将group字段拆分成多个标签，如"荣耀之夜・新的野望" -> ["荣耀之夜", "新的野望"]）
           const categories = new Set();
           presets.forEach(preset => {
             if (preset.group) {
-              // 提取前缀部分（"・"之前的内容）
-              const prefix = preset.group.split('・')[0].trim();
-              if (prefix) {
-                categories.add(prefix);
-              }
+              // 将group按"・"拆分，每个部分都是一个独立的分类标签
+              const parts = preset.group
+                .split('・')
+                .map(p => p.trim())
+                .filter(p => p);
+              parts.forEach(part => {
+                if (part) {
+                  categories.add(part);
+                }
+              });
             }
           });
           const categoryList = Array.from(categories).sort();
@@ -11138,14 +11176,17 @@
         renderPresetCards(presets, lastPreset, category, searchTerm) {
           let contentHtml = '';
 
-          // 筛选预设（根据分类前缀匹配）
+          // 🔥 筛选预设（根据拆分后的标签匹配，支持多标签）
           let filteredPresets = presets;
           if (category !== '全部') {
             filteredPresets = presets.filter(p => {
               if (!p.group) return false;
-              // 提取group的前缀部分进行匹配
-              const prefix = p.group.split('・')[0].trim();
-              return prefix === category;
+              // 将group按"・"拆分成多个标签，只要有一个匹配就显示
+              const parts = p.group
+                .split('・')
+                .map(part => part.trim())
+                .filter(part => part);
+              return parts.includes(category);
             });
           }
           if (searchTerm) {
@@ -11161,9 +11202,15 @@
 
           // 如果有上次选择且符合筛选条件，在最前面显示
           if (lastPreset && (lastPreset.uma || lastPreset.background || lastPreset.location)) {
-            const lastPresetPrefix = lastPreset.group ? lastPreset.group.split('・')[0].trim() : '';
+            // 🔥 将group拆分成多个标签进行匹配
+            const lastPresetParts = lastPreset.group
+              ? lastPreset.group
+                  .split('・')
+                  .map(p => p.trim())
+                  .filter(p => p)
+              : [];
             const shouldShowLast =
-              (category === '全部' || lastPresetPrefix === category) &&
+              (category === '全部' || lastPresetParts.includes(category)) &&
               (!searchTerm ||
                 lastPreset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (lastPreset.uma && lastPreset.uma.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -11227,8 +11274,12 @@
                     ${
                       preset.group
                         ? (() => {
-                            const prefix = preset.group.split('・')[0].trim();
-                            return `<span class="preset-card-tag">${prefix}</span>`;
+                            // 🔥 显示所有拆分后的标签
+                            const parts = preset.group
+                              .split('・')
+                              .map(p => p.trim())
+                              .filter(p => p);
+                            return parts.map(part => `<span class="preset-card-tag">${part}</span>`).join('');
                           })()
                         : ''
                     }
@@ -11329,6 +11380,7 @@
           if (this.locations) this.renderLocations();
           if (this.times) this.renderTimes();
           if (this.festivals) this.renderFestivals();
+          if (this.items) this.renderItems();
 
           // 重新渲染当前步骤
           this.renderCurrentStep();
@@ -11368,12 +11420,23 @@
             $(`.uma-card[data-uma="${preset.uma}"]`).addClass('selected');
           }
           // 🔥 更新道具选择
-          if (preset.items && preset.items.length > 0) {
-            preset.items.forEach(itemId => {
-              if (itemId !== 'no_item') {
+          if (preset.items) {
+            // 确保items是数组
+            if (!Array.isArray(preset.items)) {
+              this.selections.items = [];
+            } else {
+              this.selections.items = preset.items.filter(id => id !== 'no_item');
+            }
+            // 重新渲染道具选择以更新UI
+            if (this.items) {
+              this.renderItems();
+              // 更新选中状态
+              this.selections.items.forEach(itemId => {
                 $(`.selection-card[data-id="${itemId}"]`).addClass('selected');
-              }
-            });
+              });
+            }
+          } else {
+            this.selections.items = [];
           }
 
           toastr.success(`已应用快速预选：${preset.name}`, '', { timeOut: 3000 });
@@ -11386,6 +11449,9 @@
           this.renderCurrentStep();
           this.updateProgress();
           this.updateButtons();
+
+          // 滚动到顶部
+          $('html, body').animate({ scrollTop: 0 }, 300);
         }
 
         // 保存当前开局选择（保存所有7个步骤的选择）
@@ -11559,6 +11625,9 @@
           if (this.times) {
             this.renderTimes();
           }
+          if (this.items) {
+            this.renderItems();
+          }
 
           // 重新渲染当前步骤
           this.renderCurrentStep();
@@ -11580,19 +11649,56 @@
             $('.uma-card').removeClass('selected');
             $(`.uma-card[data-uma="${preset.uma}"]`).addClass('selected');
           }
-          if (preset.items && preset.items.length > 0) {
-            preset.items.forEach(itemId => {
-              if (itemId !== 'no_item') {
+          // 🔥 更新道具选择
+          if (preset.items) {
+            // 确保items是数组
+            if (!Array.isArray(preset.items)) {
+              this.selections.items = [];
+            } else {
+              this.selections.items = preset.items.filter(id => id !== 'no_item');
+            }
+            // 重新渲染道具选择以更新UI
+            if (this.items) {
+              this.renderItems();
+              // 更新选中状态
+              this.selections.items.forEach(itemId => {
                 $(`.selection-card[data-id="${itemId}"]`).addClass('selected');
-              }
-            });
+              });
+            }
+          } else {
+            this.selections.items = [];
           }
 
           // 只在非静默模式下显示提示
           if (!silent) {
             toastr.success(`已加载开局：${preset.name}`, '', { timeOut: 3000 });
           }
+
+          // 🔥 更新时间选择
+          if (preset.time) {
+            const timeOption = this.times.find(t => t.id === preset.time);
+            if (timeOption) {
+              const timeIndex = this.times.indexOf(timeOption);
+              const timeSlider = $('#timeSlider');
+              if (timeSlider.length) {
+                timeSlider.val(timeIndex);
+                this.selections.time = preset.time;
+                this.updateTimeDisplay(timeIndex);
+                this.updateTimeLabels(timeIndex);
+              }
+            }
+          }
+
           this.updateButtons();
+
+          // 🔥 直接跳转到总结页面（第8步）
+          this.currentStep = 8;
+          this.renderCurrentStep();
+          this.updateProgress();
+          this.updateButtons();
+
+          // 滚动到顶部
+          $('html, body').animate({ scrollTop: 0 }, 300);
         }
 
         // 播放视频
