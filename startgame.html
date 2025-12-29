@@ -11108,6 +11108,135 @@
           });
         }
 
+        // 🔥 将第一标签映射到大类标签
+        mapFirstTagToCategory(firstTag) {
+          if (!firstTag) return '其他';
+
+          // 1. 【职场·专业羁绊】
+          if (
+            firstTag.includes('职业关系') ||
+            firstTag.includes('雇佣关系') ||
+            firstTag.includes('商业合作') ||
+            firstTag.includes('商业委托') ||
+            firstTag.includes('专业指导') ||
+            firstTag.includes('专业委托') ||
+            firstTag.includes('专业评估') ||
+            firstTag.includes('专业挑战') ||
+            firstTag.includes('专业碰撞') ||
+            firstTag.includes('技术合作') ||
+            firstTag.includes('学术研究') ||
+            firstTag.includes('学术交流') ||
+            firstTag.includes('医疗关系') ||
+            firstTag.includes('职业接触') ||
+            firstTag.includes('职业观察') ||
+            firstTag.includes('职业合作') ||
+            firstTag.includes('职业冲突') ||
+            firstTag.includes('公职冲突') ||
+            firstTag.includes('职业关系')
+          ) {
+            return '【职场·专业羁绊】';
+          }
+
+          // 2. 【宿命·灵魂共鸣】
+          if (
+            firstTag.includes('宿命') ||
+            firstTag.includes('灵魂共鸣') ||
+            firstTag.includes('不期而遇') ||
+            firstTag.includes('命运') ||
+            firstTag.includes('轮回') ||
+            firstTag.includes('约定') ||
+            firstTag.includes('共鸣') ||
+            firstTag.includes('理想共鸣') ||
+            firstTag.includes('创作共鸣') ||
+            firstTag.includes('艺术共鸣')
+          ) {
+            return '【宿命·灵魂共鸣】';
+          }
+
+          // 3. 【学院·日常温情】
+          if (
+            firstTag.includes('特雷森学院') ||
+            firstTag.includes('学院边缘') ||
+            firstTag.includes('日常观察') ||
+            firstTag.includes('日常关系') ||
+            firstTag.includes('日常奇迹') ||
+            firstTag.includes('日常竞技') ||
+            firstTag.includes('师生关系') ||
+            firstTag.includes('兴趣同好') ||
+            firstTag.includes('共同爱好') ||
+            firstTag.includes('青梅竹马') ||
+            firstTag.includes('青春共犯') ||
+            firstTag.includes('偶然邂逅') ||
+            firstTag.includes('奇妙邂逅') ||
+            firstTag.includes('意外窥探') ||
+            firstTag.includes('巧合事件')
+          ) {
+            return '【学院·日常温情】';
+          }
+
+          // 4. 【博弈·心理攻防】
+          if (
+            firstTag.includes('心理攻防') ||
+            firstTag.includes('心理洞察') ||
+            firstTag.includes('心理干预') ||
+            firstTag.includes('博弈') ||
+            firstTag.includes('挑战') ||
+            firstTag.includes('对决') ||
+            firstTag.includes('胜负') ||
+            firstTag.includes('技巧博弈') ||
+            firstTag.includes('强强对决') ||
+            firstTag.includes('理性崩坏') ||
+            firstTag.includes('伪装') ||
+            firstTag.includes('角色扮演')
+          ) {
+            return '【博弈·心理攻防】';
+          }
+
+          // 5. 【极限·欲望失控】
+          if (
+            firstTag.includes('极端场景') ||
+            firstTag.includes('极端冲突') ||
+            firstTag.includes('极限') ||
+            firstTag.includes('欲望') ||
+            firstTag.includes('支配关系') ||
+            firstTag.includes('强制') ||
+            firstTag.includes('绝对支配') ||
+            firstTag.includes('危险') ||
+            firstTag.includes('末路') ||
+            firstTag.includes('绝境') ||
+            firstTag.includes('失控') ||
+            firstTag.includes('崩坏') ||
+            firstTag.includes('囚笼') ||
+            firstTag.includes('囚禁') ||
+            firstTag.includes('占有') ||
+            firstTag.includes('标记') ||
+            firstTag.includes('领地') ||
+            firstTag.includes('独占') ||
+            firstTag.includes('依赖') ||
+            firstTag.includes('执念')
+          ) {
+            return '【极限·欲望失控】';
+          }
+
+          // 6. 怪文书，重力
+          if (
+            firstTag.includes('都市怪谈') ||
+            firstTag.includes('超自然') ||
+            firstTag.includes('重力') ||
+            firstTag.includes('怪谈') ||
+            firstTag.includes('非日常') ||
+            firstTag.includes('科学崩坏') ||
+            firstTag.includes('时空') ||
+            firstTag.includes('魔法') ||
+            firstTag.includes('怪文书')
+          ) {
+            return '【怪文书·重力】';
+          }
+
+          // 默认归类
+          return '其他';
+        }
+
         // 🔥 显示快速预选独立界面（网格布局+分类+搜索）
         showQuickPresetMenu() {
           // 隐藏初始界面，显示快速预选界面
@@ -11127,18 +11256,30 @@
 
           const presets = this.getQuickPresets();
 
-          // 🔥 提取所有分类（只按第一个标签，即"・"之前的部分）
+          // 🔥 提取所有分类（将第一标签映射到大类标签）
           const categories = new Set();
           presets.forEach(preset => {
             if (preset.group) {
-              // 只提取第一个标签（"・"之前的部分）
+              // 提取第一个标签并映射到大类
               const firstTag = preset.group.split('・')[0].trim();
               if (firstTag) {
-                categories.add(firstTag);
+                const category = this.mapFirstTagToCategory(firstTag);
+                categories.add(category);
               }
             }
           });
-          const categoryList = Array.from(categories).sort();
+
+          // 🔥 按固定顺序排列分类
+          const categoryOrder = [
+            '【职场·专业羁绊】',
+            '【宿命·灵魂共鸣】',
+            '【学院·日常温情】',
+            '【博弈·心理攻防】',
+            '【极限·欲望失控】',
+            '【怪文书·重力场】',
+            '其他',
+          ];
+          const categoryList = categoryOrder.filter(cat => categories.has(cat));
 
           // 生成分类标签
           let categoryTagsHtml = '<span class="preset-category-tag active" data-category="全部">全部</span>';
@@ -11171,14 +11312,15 @@
         renderPresetCards(presets, lastPreset, category, searchTerm) {
           let contentHtml = '';
 
-          // 🔥 筛选预设（只按第一个标签匹配）
+          // 🔥 筛选预设（按大类标签匹配）
           let filteredPresets = presets;
           if (category !== '全部') {
             filteredPresets = presets.filter(p => {
               if (!p.group) return false;
-              // 只匹配第一个标签（"・"之前的部分）
+              // 提取第一个标签并映射到大类
               const firstTag = p.group.split('・')[0].trim();
-              return firstTag === category;
+              const mappedCategory = this.mapFirstTagToCategory(firstTag);
+              return mappedCategory === category;
             });
           }
           if (searchTerm) {
@@ -11194,10 +11336,11 @@
 
           // 如果有上次选择且符合筛选条件，在最前面显示
           if (lastPreset && (lastPreset.uma || lastPreset.background || lastPreset.location)) {
-            // 🔥 只按第一个标签匹配
+            // 🔥 按大类标签匹配
             const lastPresetFirstTag = lastPreset.group ? lastPreset.group.split('・')[0].trim() : '';
+            const lastPresetCategory = this.mapFirstTagToCategory(lastPresetFirstTag);
             const shouldShowLast =
-              (category === '全部' || lastPresetFirstTag === category) &&
+              (category === '全部' || lastPresetCategory === category) &&
               (!searchTerm ||
                 lastPreset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (lastPreset.uma && lastPreset.uma.toLowerCase().includes(searchTerm.toLowerCase())) ||
