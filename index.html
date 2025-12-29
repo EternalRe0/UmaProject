@@ -1,0 +1,250 @@
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>统一游戏入口</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        'use strict';
+
+        // 检查SillyTavern API
+        if (typeof getChatMessages === 'undefined' || typeof TavernHelper === 'undefined') {
+          console.error('[统一入口] SillyTavern API 未找到');
+          return;
+        }
+
+        console.log('[统一入口] 开始初始化...');
+
+        // 🔥 定义重新加载函数，供开局.html调用
+        window.reloadUnifiedEntry = async function () {
+          console.log('[统一入口] 收到重新加载请求...');
+          try {
+            // 重新执行判断逻辑
+            // 🔥 参考分析2.js的loadState：从后往前查找第一个有extra.teresen_chat的消息
+            let chatHistory = [];
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.chat && SillyTavern.chat.length > 0) {
+              for (let i = SillyTavern.chat.length - 1; i >= 0; i--) {
+                const msg = SillyTavern.chat[i];
+                if (msg.extra?.teresen_chat && Array.isArray(msg.extra.teresen_chat)) {
+                  chatHistory = msg.extra.teresen_chat;
+                  break;
+                }
+              }
+            }
+
+            const hasGameHistory = Array.isArray(chatHistory) && chatHistory.length > 0;
+            const shouldLoadMainPage = hasGameHistory;
+
+            console.log('[统一入口] 重新判断结果:', {
+              hasGameHistory: hasGameHistory,
+              chatHistoryLength: chatHistory.length,
+              shouldLoadMainPage: shouldLoadMainPage,
+            });
+
+            let url;
+            if (shouldLoadMainPage) {
+              console.log('[统一入口] 重新加载正文页面...');
+              url = 'https://fastly.jsdelivr.net/gh/EternalRe0/UmaProject@b6d4c312649c61d6f2fdf639fb07dce5cf0c19d0/mainpage.html';
+            } else {
+              console.log('[统一入口] 重新加载开局页面...');
+              url = 'https://fastly.jsdelivr.net/gh/EternalRe0/UmaProject@b6d4c312649c61d6f2fdf639fb07dce5cf0c19d0/startgame.html';
+            }
+
+            // 加载页面
+            if (typeof $ !== 'undefined' && $.fn.load) {
+              $('body').load(url, function (response, status, xhr) {
+                if (status === 'error') {
+                  console.error('[统一入口] 重新加载失败:', xhr.status, xhr.statusText);
+                } else {
+                  console.log('[统一入口] 重新加载完成');
+                }
+              });
+            } else {
+              const response = await fetch(url);
+              if (!response.ok) {
+                throw new Error(`HTTP错误! 状态: ${response.status}`);
+              }
+
+              const html = await response.text();
+              const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+              const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+
+              let bodyContent = bodyMatch ? bodyMatch[1].trim() : html;
+
+              if (headMatch) {
+                const headContent = headMatch[1];
+                const styleMatch = headContent.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+                const linkMatch = headContent.match(/<link[^>]*>/gi);
+
+                let headStyles = '';
+                if (styleMatch) {
+                  headStyles += styleMatch.join('\n');
+                }
+                if (linkMatch) {
+                  headStyles += linkMatch.join('\n');
+                }
+
+                if (headStyles) {
+                  bodyContent = headStyles + '\n' + bodyContent;
+                }
+              }
+
+              document.body.innerHTML = bodyContent;
+
+              setTimeout(() => {
+                const scripts = document.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                  if (oldScript.textContent.includes('[统一入口]')) {
+                    return;
+                  }
+
+                  const newScript = document.createElement('script');
+                  Array.from(oldScript.attributes).forEach(attr => {
+                    newScript.setAttribute(attr.name, attr.value);
+                  });
+                  if (oldScript.src) {
+                    newScript.src = oldScript.src;
+                  } else {
+                    newScript.textContent = oldScript.textContent;
+                  }
+                  oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+
+                console.log('[统一入口] 重新加载完成');
+              }, 100);
+            }
+          } catch (error) {
+            console.error('[统一入口] 重新加载失败:', error);
+          }
+        };
+
+        (async function () {
+          try {
+            // 1. 检查消息状态，判断应该加载哪个页面
+            // 🔥 参考分析2.js的loadState：从后往前查找第一个有extra.teresen_chat的消息
+            let chatHistory = [];
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.chat && SillyTavern.chat.length > 0) {
+              for (let i = SillyTavern.chat.length - 1; i >= 0; i--) {
+                const msg = SillyTavern.chat[i];
+                if (msg.extra?.teresen_chat && Array.isArray(msg.extra.teresen_chat)) {
+                  chatHistory = msg.extra.teresen_chat;
+                  console.log(`[统一入口] 找到extra.teresen_chat，位置：第${i}条消息（从后往前）`);
+                  break;
+                }
+              }
+            }
+
+            console.log('[统一入口] 检查结果:', {
+              chatHistoryLength: chatHistory.length,
+            });
+
+            // 检查teresen_chat是否是有效的游戏记录（不是空数组，且至少有一条记录）
+            const hasGameHistory = Array.isArray(chatHistory) && chatHistory.length > 0;
+
+            // 只有teresen_chat有记录时才加载正文页
+            // 开局选择完成后，虽然0层有开场剧情，但teresen_chat还是空的，所以会继续显示开局选择
+            // 直到真正开始游戏并保存到teresen_chat后，才会加载正文页
+            const shouldLoadMainPage = hasGameHistory;
+
+            console.log('[统一入口] 判断结果:', {
+              hasGameHistory: hasGameHistory,
+              chatHistoryLength: chatHistory.length,
+              shouldLoadMainPage: shouldLoadMainPage,
+            });
+
+            // 2. 根据判断结果加载对应的页面
+            let url;
+            if (shouldLoadMainPage) {
+              console.log('[统一入口] 加载正文页面...');
+              url = 'https://fastly.jsdelivr.net/gh/EternalRe0/UmaProject@cf79e30f1c8011509ce727ba364a051250fd41c3/mainpage.html';
+            } else {
+              console.log('[统一入口] 加载开局页面...');
+              url = 'https://fastly.jsdelivr.net/gh/EternalRe0/UmaProject@cf79e30f1c8011509ce727ba364a051250fd41c3/startgame.html';
+            }
+
+            // 3. 使用jQuery的.load()方法加载（如果可用），否则使用fetch
+            if (typeof $ !== 'undefined' && $.fn.load) {
+              console.log('[统一入口] 使用jQuery.load()加载页面...');
+              $('body').load(url, function (response, status, xhr) {
+                if (status === 'error') {
+                  console.error('[统一入口] jQuery加载失败:', xhr.status, xhr.statusText);
+                  document.body.innerHTML = '<p style="color:red;">加载失败: ' + xhr.statusText + '</p>';
+                } else {
+                  console.log('[统一入口] 页面加载完成');
+                }
+              });
+            } else {
+              // 备用方案：使用fetch
+              console.log('[统一入口] 使用fetch加载页面...');
+              const response = await fetch(url);
+              if (!response.ok) {
+                throw new Error(`HTTP错误! 状态: ${response.status}`);
+              }
+
+              const html = await response.text();
+
+              // 提取body内容（包括head中的style和script）
+              const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+              const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+
+              let bodyContent = bodyMatch ? bodyMatch[1].trim() : html;
+
+              // 提取head中的style和link标签，添加到body前
+              if (headMatch) {
+                const headContent = headMatch[1];
+                const styleMatch = headContent.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+                const linkMatch = headContent.match(/<link[^>]*>/gi);
+
+                let headStyles = '';
+                if (styleMatch) {
+                  headStyles += styleMatch.join('\n');
+                }
+                if (linkMatch) {
+                  headStyles += linkMatch.join('\n');
+                }
+
+                if (headStyles) {
+                  bodyContent = headStyles + '\n' + bodyContent;
+                }
+              }
+
+              // 替换当前body内容
+              document.body.innerHTML = bodyContent;
+
+              // 执行脚本（延迟执行，确保DOM已更新）
+              setTimeout(() => {
+                const scripts = document.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                  // 跳过当前脚本（统一入口的脚本）
+                  if (oldScript.textContent.includes('[统一入口]')) {
+                    return;
+                  }
+
+                  const newScript = document.createElement('script');
+                  Array.from(oldScript.attributes).forEach(attr => {
+                    newScript.setAttribute(attr.name, attr.value);
+                  });
+                  if (oldScript.src) {
+                    newScript.src = oldScript.src;
+                  } else {
+                    newScript.textContent = oldScript.textContent;
+                  }
+                  oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+
+                console.log('[统一入口] 页面加载完成');
+              }, 100);
+            }
+          } catch (error) {
+            console.error('[统一入口] 加载失败:', error);
+            document.body.innerHTML = '<p style="color:red;">加载失败: ' + error.message + '</p>';
+          }
+        })();
+      })();
+    </script>
+  </body>
+</html>
+
