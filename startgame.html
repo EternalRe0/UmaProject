@@ -11127,20 +11127,15 @@
 
           const presets = this.getQuickPresets();
 
-          // 🔥 提取所有分类（将group字段拆分成多个标签，如"荣耀之夜・新的野望" -> ["荣耀之夜", "新的野望"]）
+          // 🔥 提取所有分类（只按第一个标签，即"・"之前的部分）
           const categories = new Set();
           presets.forEach(preset => {
             if (preset.group) {
-              // 将group按"・"拆分，每个部分都是一个独立的分类标签
-              const parts = preset.group
-                .split('・')
-                .map(p => p.trim())
-                .filter(p => p);
-              parts.forEach(part => {
-                if (part) {
-                  categories.add(part);
-                }
-              });
+              // 只提取第一个标签（"・"之前的部分）
+              const firstTag = preset.group.split('・')[0].trim();
+              if (firstTag) {
+                categories.add(firstTag);
+              }
             }
           });
           const categoryList = Array.from(categories).sort();
@@ -11176,17 +11171,14 @@
         renderPresetCards(presets, lastPreset, category, searchTerm) {
           let contentHtml = '';
 
-          // 🔥 筛选预设（根据拆分后的标签匹配，支持多标签）
+          // 🔥 筛选预设（只按第一个标签匹配）
           let filteredPresets = presets;
           if (category !== '全部') {
             filteredPresets = presets.filter(p => {
               if (!p.group) return false;
-              // 将group按"・"拆分成多个标签，只要有一个匹配就显示
-              const parts = p.group
-                .split('・')
-                .map(part => part.trim())
-                .filter(part => part);
-              return parts.includes(category);
+              // 只匹配第一个标签（"・"之前的部分）
+              const firstTag = p.group.split('・')[0].trim();
+              return firstTag === category;
             });
           }
           if (searchTerm) {
@@ -11202,15 +11194,10 @@
 
           // 如果有上次选择且符合筛选条件，在最前面显示
           if (lastPreset && (lastPreset.uma || lastPreset.background || lastPreset.location)) {
-            // 🔥 将group拆分成多个标签进行匹配
-            const lastPresetParts = lastPreset.group
-              ? lastPreset.group
-                  .split('・')
-                  .map(p => p.trim())
-                  .filter(p => p)
-              : [];
+            // 🔥 只按第一个标签匹配
+            const lastPresetFirstTag = lastPreset.group ? lastPreset.group.split('・')[0].trim() : '';
             const shouldShowLast =
-              (category === '全部' || lastPresetParts.includes(category)) &&
+              (category === '全部' || lastPresetFirstTag === category) &&
               (!searchTerm ||
                 lastPreset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (lastPreset.uma && lastPreset.uma.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -11274,7 +11261,7 @@
                     ${
                       preset.group
                         ? (() => {
-                            // 🔥 显示所有拆分后的标签
+                            // 🔥 显示所有标签（group1、group2等），但分类只按第一个标签
                             const parts = preset.group
                               .split('・')
                               .map(p => p.trim())
