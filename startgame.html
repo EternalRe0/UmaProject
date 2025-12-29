@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="zh-CN">
   <head>
@@ -2120,12 +2119,12 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 20px;
+        padding: 0;
       }
 
       .id-card {
         width: 100%;
-        max-width: 95%;
+        max-width: 100%;
         background: linear-gradient(135deg, #f4f1e8 0%, #e8e0d0 100%);
         border: 4px solid #8b4513;
         border-radius: 16px;
@@ -6820,97 +6819,97 @@
 
         // 获取马娘立绘（用于预设卡片背景）
         getUmaIllustration(name) {
-          // ImgBB链接映射表 - 转换为直接图片URL格式
+          // 新的图片链接映射表
           const illustrations = {
-            艾尼斯风神: 'https://i.ibb.co/TBBPFHGN/1.jpg',
-            爱丽数码: 'https://i.ibb.co/BVFjpv3x/2.jpg',
-            爱丽速子: 'https://i.ibb.co/0VVw0n9v/3.jpg',
-            爱慕织姬: 'https://i.ibb.co/7JCMFdbZ/4.jpg',
-            爱如往昔: 'https://i.ibb.co/twNJj50d/5.jpg',
-            八重无敌: 'https://i.ibb.co/jkRvSbwJ/6.jpg',
-            北部玄驹: 'https://i.ibb.co/LhtsJKG4/7.jpg',
-            北港火山: 'https://i.ibb.co/s4cdCqN/8.jpg',
-            草上飞: 'https://i.ibb.co/9HQx9mt7/10.jpg',
-            茶座梦想: 'https://i.ibb.co/b5LSxCG2/11.jpg',
-            超级溪流: 'https://i.ibb.co/qFDWg1DJ/12.jpg',
-            超级小海湾: 'https://i.ibb.co/p68jjwMs/13.jpg',
-            成田白仁: 'https://i.ibb.co/5Vb0xXc/14.jpg',
-            成田路: 'https://i.ibb.co/HLbkm5HY/15.jpg',
-            创升: 'https://i.ibb.co/hF4VCG4r/16.jpg',
-            创世驹: 'https://i.ibb.co/VW0WqpLT/17.jpg',
-            春乌拉拉: 'https://i.ibb.co/8nvGdQrs/18.jpg',
-            大和赤骥: 'https://i.ibb.co/qY6QZ2mr/19.jpg',
-            大鸣大放: 'https://i.ibb.co/RTsKxZbg/20.jpg',
-            大树快车: 'https://i.ibb.co/HpLTxDW0/21.jpg',
-            大拓太阳神: 'https://i.ibb.co/jk1Vq85K/22.jpg',
-            待兼福来: 'https://i.ibb.co/yFNvbyHN/23.jpg',
-            帝王光辉: 'https://i.ibb.co/zVVRH3fh/24.jpg',
-            第一红宝石: 'https://i.ibb.co/vCmZvjyd/25.jpg',
-            东海帝王: 'https://i.ibb.co/wF2TNNRY/26.jpg',
-            东南逐渐: 'https://i.ibb.co/9HPmxt5M/27.jpg',
-            多旺达: 'https://i.ibb.co/k242vgqj/28.jpg',
-            伏特加: 'https://i.ibb.co/0jSNffQs/29.jpg',
-            富士奇石: 'https://i.ibb.co/Y4QmJyKc/30.jpg',
-            高尚骏逸: 'https://i.ibb.co/gZDdTFLK/31.jpg',
-            葛城王牌: 'https://i.ibb.co/jvxvCbZg/32.jpg',
-            贵妇人: 'https://i.ibb.co/rfGzYcHN/33.jpg',
-            好歌剧: 'https://i.ibb.co/5X7PRgCc/34.jpg',
-            荒漠英雄: 'https://i.ibb.co/nsSNdvr4/35.jpg',
-            黄金城市: 'https://i.ibb.co/JR45Mqg6/36.jpg',
-            黄金船: 'https://i.ibb.co/q64v4Jc/37.jpg',
-            黄金巨匠: 'https://i.ibb.co/vvP5DKF6/38.jpg',
-            黄金旅程: 'https://i.ibb.co/qMDwc0HH/39.jpg',
-            极峰: 'https://i.ibb.co/VWrQb9sY/40.jpg',
-            金镇之光: 'https://i.ibb.co/wN5yy7zR/41.jpg',
-            骏川手纲: 'https://i.ibb.co/JWc5JKBF/42.jpg',
-            凯旋芭蕾: 'https://i.ibb.co/NndtdrcD/43.jpg',
-            凯旋门: 'https://i.ibb.co/WNK4h74C/44.jpg',
-            里见光钻: 'https://i.ibb.co/spvL6dfG/45.jpg',
-            里见皇冠: 'https://i.ibb.co/7t9Q1BjH/46.jpg',
-            菱亚马逊: 'https://i.ibb.co/Ng44MmKR/47.jpg',
-            菱钻奇宝: 'https://i.ibb.co/LdpzXs9t/48.jpg',
-            鲁道夫象征: 'https://i.ibb.co/VF8vcFW/49.jpg',
-            曼城茶座: 'https://i.ibb.co/1YCR384s/50.jpg',
-            美妙姿势: 'https://i.ibb.co/ynJnhf3B/51.jpg',
-            美浦波旁: 'https://i.ibb.co/WSFS9vS/52.jpg',
-            梦之旅: 'https://i.ibb.co/7dtbvS2W/53.jpg',
-            迷人景致: 'https://i.ibb.co/350jS5Rj/54.jpg',
-            米浴: 'https://i.ibb.co/wFFChjLj/55.jpg',
-            名将怒涛: 'https://i.ibb.co/70Vbzyf/56.jpg',
-            摩耶重炮: 'https://i.ibb.co/4gYX0y5j/57.jpg',
-            谋勇兼备: 'https://i.ibb.co/TN9Qvwv/58.jpg',
-            目白阿尔丹: 'https://i.ibb.co/x858SBsK/59.jpg',
-            目白多伯: 'https://i.ibb.co/67pJd0TL/60.jpg',
-            目白高峰: 'https://i.ibb.co/F4F2xzBC/61.jpg',
-            目白光明: 'https://i.ibb.co/0yfGrSX3/62.jpg',
-            目白麦昆: 'https://i.ibb.co/YB2cRX7R/63.jpg',
-            目白善信: 'https://i.ibb.co/67pJd0TL/64.jpg',
-            奇锐骏: 'https://i.ibb.co/C3pgbYtR/65.jpg',
-            气槽: 'https://i.ibb.co/XN1jwpy/66.jpg',
-            千明代表: 'https://i.ibb.co/dw39G1tM/67.jpg',
-            强击: 'https://i.ibb.co/PvzHSQ3F/68.jpg',
-            青云天空: 'https://i.ibb.co/hRBZvbdr/69.jpg',
-            秋川理事长: 'https://i.ibb.co/V0RTQt8m/70.jpg',
-            荣进闪耀: 'https://i.ibb.co/MDDxkFQQ/71.jpg',
-            森林宝穴: 'https://i.ibb.co/ZQ3jYwV/72.jpg',
-            神鹰: 'https://i.ibb.co/93cWBhr8/73.jpg',
-            双涡轮: 'https://i.ibb.co/mrt9zhk1/74.jpg',
-            特别周: 'https://i.ibb.co/LXjf0GX2/75.jpg',
-            天狼星象征: 'https://i.ibb.co/rR42c3w9/76.jpg',
-            丸善斯基: 'https://i.ibb.co/PvvFdzrX/77.jpg',
-            无声铃鹿: 'https://i.ibb.co/ccBX8pLf/78.jpg',
-            西野花: 'https://i.ibb.co/kF2xgxS/79.jpg',
-            小栗帽: 'https://i.ibb.co/WNdbysyS/80.jpg',
-            小林历奇: 'https://i.ibb.co/7xby5ySF/81.jpg',
-            新宇宙: 'https://i.ibb.co/ccC77JQh/82.jpg',
-            幸目: 'https://i.ibb.co/zWS4yQLw/83.jpg',
-            樱花千代王: 'https://i.ibb.co/8gNDhhL6/84.jpg',
-            玉藻十字: 'https://i.ibb.co/35DJJffz/85.jpg',
-            真弓快车: 'https://i.ibb.co/G3vBWDHv/86.jpg',
-            真机伶: 'https://i.ibb.co/CKXFzBxm/87.jpg',
-            中山庆典: 'https://i.ibb.co/4Zn59q7d/88.jpg',
-            周日宁静: 'https://i.ibb.co/MkH2QxVd/89.jpg',
-            卓芙: 'https://i.ibb.co/HD8D8MNV/90.jpg',
+            艾尼斯风神: 'https://i.ibb.co/9kw3VcXb/image.jpg',
+            爱丽数码: 'https://i.ibb.co/zWM39XYP/image.jpg',
+            爱丽速子: 'https://i.ibb.co/bjF7VQTc/image.jpg',
+            爱慕织姬: 'https://i.ibb.co/sdmgN0mc/image.jpg',
+            爱如往昔: 'https://i.ibb.co/jPv1GKmz/image.jpg',
+            八重无敌: 'https://i.ibb.co/396ShFcw/image.jpg',
+            北部玄驹: 'https://i.ibb.co/3yjHCwTX/image.jpg',
+            北港火山: 'https://i.ibb.co/mVDKrfXL/image.jpg',
+            草上飞: 'https://i.ibb.co/0RhMsJhk/image.jpg',
+            茶座梦想: 'https://i.ibb.co/4nrZQwQM/image.jpg',
+            超常骏骥: 'https://i.ibb.co/7xTFWLrK/image.jpg',
+            超级小海湾: 'https://i.ibb.co/bMK3J1JP/image.jpg',
+            成田白仁: 'https://i.ibb.co/mxR5Kf0/image.jpg',
+            成田路: 'https://i.ibb.co/N6dkfKpv/image.jpg',
+            创升: 'https://i.ibb.co/LhgChzH6/image.jpg',
+            创世驹: 'https://i.ibb.co/q3QHk2Md/image.jpg',
+            春乌拉拉: 'https://i.ibb.co/cSW4qYVs/image.jpg',
+            大和赤骥: 'https://i.ibb.co/xt3V84b6/image.jpg',
+            大鸣大放: 'https://i.ibb.co/Gv0GPPDm/image.jpg',
+            大树快车: 'https://i.ibb.co/0RzRzf6t/image.jpg',
+            大拓太阳神: 'https://i.ibb.co/9m80CMdx/image.jpg',
+            待兼福来: 'https://i.ibb.co/VWk07QmZ/image.jpg',
+            帝王光辉: 'https://i.ibb.co/sJP4N1qj/image.jpg',
+            第一红宝石: 'https://i.ibb.co/7NnXKrVd/image.jpg',
+            东海帝王: 'https://i.ibb.co/7t2R7r9R/image.jpg',
+            东商变革: 'https://i.ibb.co/8LghTYDB/image.jpg',
+            多旺达: 'https://i.ibb.co/ZpSBM6yc/image.jpg',
+            伏特加: 'https://i.ibb.co/1GHqvv4x/image.jpg',
+            富士奇石: 'https://i.ibb.co/0Rc1L5h5/image.jpg',
+            高尚骏逸: 'https://i.ibb.co/v4xPB29J/image.jpg',
+            葛城王牌: 'https://i.ibb.co/RGJXs07k/image.jpg',
+            贵妇人: 'https://i.ibb.co/b50StRVr/image.jpg',
+            好歌剧: 'https://i.ibb.co/mmwd27J/image.jpg',
+            荒漠英雄: 'https://i.ibb.co/WNZZsKhp/image.jpg',
+            黄金城市: 'https://i.ibb.co/zyb7GyL/image.jpg',
+            黄金船: 'https://i.ibb.co/sdny3KGx/image.jpg',
+            黄金巨匠: 'https://i.ibb.co/35bjGsPQ/image.jpg',
+            黄金旅程: 'https://i.ibb.co/GQFvMmBD/image.jpg',
+            极峰: 'https://i.ibb.co/whL32BVK/image.jpg',
+            金镇之光: 'https://i.ibb.co/sdTV1C6G/image.jpg',
+            骏川手纲: 'https://i.ibb.co/PGcC8MJJ/image.jpg',
+            凯旋芭蕾: 'https://i.ibb.co/2095wbpG/image.jpg',
+            凯旋门: 'https://i.ibb.co/PGXrqbFh/image.jpg',
+            里见光钻: 'https://i.ibb.co/ccwzNDNq/image.jpg',
+            里见皇冠: 'https://i.ibb.co/21TT1z4x/image.jpg',
+            菱亚马逊: 'https://i.ibb.co/9k1ZfR67/image.jpg',
+            菱钻奇宝: 'https://i.ibb.co/cW77JWq/image.jpg',
+            鲁道夫象征: 'https://i.ibb.co/bMW3J9Ft/image.jpg',
+            曼城茶座: 'https://i.ibb.co/ccG9rQ4Z/image.jpg',
+            美妙姿势: 'https://i.ibb.co/MDH3bk1G/image.jpg',
+            美浦波旁: 'https://i.ibb.co/NgsS7WFF/image.jpg',
+            梦之旅: 'https://i.ibb.co/YTQ4Wptw/image.jpg',
+            迷人景致: 'https://i.ibb.co/gZB1Byqy/image.jpg',
+            米浴: 'https://i.ibb.co/0jjgvcPF/image.jpg',
+            名将怒涛: 'https://i.ibb.co/cSMkYKS5/image.jpg',
+            摩耶重炮: 'https://i.ibb.co/4ZvLV6mm/image.jpg',
+            谋勇兼备: 'https://i.ibb.co/5JphLRB/image.jpg',
+            目白阿尔丹: 'https://i.ibb.co/Ld1dzTsz/image.jpg',
+            目白多伯: 'https://i.ibb.co/G3rKz9tW/image.jpg',
+            目白高峰: 'https://i.ibb.co/HfMFWf0j/image.jpg',
+            目白光明: 'https://i.ibb.co/G6jyZJV/image.jpg',
+            目白麦昆: 'https://i.ibb.co/9HdtNVtK/image.jpg',
+            目白善信: 'https://i.ibb.co/gMFvtxB1/image.jpg',
+            奇锐骏: 'https://i.ibb.co/R49j9Xwp/image.jpg',
+            气槽: 'https://i.ibb.co/rf2hVhQf/image.jpg',
+            千明代表: 'https://i.ibb.co/SwRtPzwn/image.jpg',
+            强击: 'https://i.ibb.co/FbFRfDyC/image.jpg',
+            青云天空: 'https://i.ibb.co/QF8bC59c/image.jpg',
+            秋川理事长: 'https://i.ibb.co/35by8BXz/image.jpg',
+            荣进闪耀: 'https://i.ibb.co/hRdcsSF8/image.jpg',
+            森林宝穴: 'https://i.ibb.co/bjBQjf1m/image.jpg',
+            神鹰: 'https://i.ibb.co/KcCHsbnP/image.jpg',
+            双涡轮: 'https://i.ibb.co/xKpnphnP/image.jpg',
+            特别周: 'https://i.ibb.co/4RgQZrX2/image.jpg',
+            天狼星象征: 'https://i.ibb.co/4wvpvYsh/image.jpg',
+            丸善斯基: 'https://i.ibb.co/gGZCB9t/image.jpg',
+            无声铃鹿: 'https://i.ibb.co/RG2ZDQ51/image.jpg',
+            西野花: 'https://i.ibb.co/DH37H7vC/image.jpg',
+            小栗帽: 'https://i.ibb.co/v4TGSc3F/image.jpg',
+            小林历奇: 'https://i.ibb.co/q3824QCb/image.jpg',
+            新宇宙: 'https://i.ibb.co/v6WFP86D/image.jpg',
+            杏目: 'https://i.ibb.co/WN02Hkv9/image.jpg',
+            樱花千代王: 'https://i.ibb.co/2YtCrr1X/image.jpg',
+            玉藻十字: 'https://i.ibb.co/cGszyd9/image.jpg',
+            真弓快车: 'https://i.ibb.co/NdWyScmD/image.jpg',
+            真机伶: 'https://i.ibb.co/Q3zTwn0j/image.jpg',
+            中山庆典: 'https://i.ibb.co/zHRLdB6g/image.jpg',
+            周日宁静: 'https://i.ibb.co/DDMz6Lnd/image.jpg',
+            卓芙: 'https://i.ibb.co/HDNscBZs/image.jpg',
           };
           return illustrations[name] || null;
         }
@@ -7976,6 +7975,16 @@
                       <span class="id-card-label">道具</span>
                       <span class="id-card-value">${selectedItems.length > 0 ? selectedItems.map(item => item.icon).join(' ') : '无'}</span>
                     </div>
+                    ${
+                      this.selections.presetDescription
+                        ? `
+                    <div class="id-card-row" style="flex-direction: column; align-items: flex-start; padding-top: 15px; border-top: 2px solid rgba(139, 69, 19, 0.3); margin-top: 10px;">
+                      <span class="id-card-label" style="margin-bottom: 8px;">故事背景</span>
+                      <span class="id-card-value" style="text-align: left; font-size: 0.9em; line-height: 1.6; color: #654321;">${this.selections.presetDescription}</span>
+                    </div>
+                    `
+                        : ''
+                    }
                   </div>
                 </div>
                 
@@ -10770,12 +10779,7 @@
 
           // 🔥 如果有上次选择，在最前面显示
           if (lastPreset && (lastPreset.uma || lastPreset.background || lastPreset.location)) {
-            contentHtml += `<div class="preset-group-container" style="margin-bottom: 40px;">`;
-            contentHtml += `<h3 class="preset-group-title">
-              <span style="font-size: 28px; margin-right: 10px;">⭐</span>
-              上次选择
-            </h3>`;
-            contentHtml += '<div class="preset-cards-grid">';
+            contentHtml += '<div class="preset-cards-grid" style="margin-bottom: 30px;">';
             const lastUmaIllustration = lastPreset.uma ? this.getUmaIllustration(lastPreset.uma) : null;
             contentHtml += `<button class="preset-card preset-card-featured preset-option-btn" data-preset="last">
               ${lastUmaIllustration ? `<div class="preset-card-background" style="background-image: url('${lastUmaIllustration}');"></div>` : ''}
@@ -10791,38 +10795,29 @@
                 </div>
               </div>
             </button>`;
-            contentHtml += '</div></div>';
+            contentHtml += '</div>';
           }
 
-          // 按分组显示预设（游戏平台风格）
-          Object.keys(groupedPresets).forEach(group => {
-            contentHtml += `<div class="preset-group-container">`;
-            contentHtml += `<h3 class="preset-group-title">${group}</h3>`;
-            contentHtml += '<div class="preset-cards-grid">';
-
-            groupedPresets[group].forEach(preset => {
-              const umaIllustration = preset.uma ? this.getUmaIllustration(preset.uma) : null;
-              contentHtml += `<button class="preset-card preset-option-btn" data-index="${preset.originalIndex}">
-                ${umaIllustration ? `<div class="preset-card-background" style="background-image: url('${umaIllustration}');"></div>` : ''}
-                <div class="preset-card-content">
-                  <div class="preset-card-header">
-                    <div class="preset-card-tag-container">
-                      <span class="preset-card-tag">${preset.group || '其他'}</span>
-                    </div>
-                    <div class="preset-card-title">${preset.name}</div>
-                  </div>
-                  <div class="preset-card-body">
-                    <p class="preset-card-description">${preset.description || '暂无描述'}</p>
-                  </div>
-                  <div class="preset-card-footer">
-                    <span class="preset-card-badge">开始</span>
-                  </div>
+          // 显示所有预设（不再按分组）
+          contentHtml += '<div class="preset-cards-grid">';
+          presets.forEach((preset, index) => {
+            const umaIllustration = preset.uma ? this.getUmaIllustration(preset.uma) : null;
+            contentHtml += `<button class="preset-card preset-option-btn" data-index="${index}">
+              ${umaIllustration ? `<div class="preset-card-background" style="background-image: url('${umaIllustration}');"></div>` : ''}
+              <div class="preset-card-content">
+                <div class="preset-card-header">
+                  <div class="preset-card-title">${preset.name}</div>
                 </div>
-              </button>`;
-            });
-
-            contentHtml += '</div></div>';
+                <div class="preset-card-body">
+                  <p class="preset-card-description">${preset.description || '暂无描述'}</p>
+                </div>
+                <div class="preset-card-footer">
+                  <span class="preset-card-badge">开始</span>
+                </div>
+              </div>
+            </button>`;
           });
+          contentHtml += '</div>';
 
           // 更新界面内容
           $('#quickPresetContent').html(contentHtml);
@@ -10861,6 +10856,10 @@
           if (preset.time) this.selections.time = preset.time;
           if (preset.festival) this.selections.festival = preset.festival;
           if (preset.items) this.selections.items = preset.items;
+
+          // 保存预设描述到selections中，用于在总结中显示
+          if (preset.description) this.selections.presetDescription = preset.description;
+          if (preset.name) this.selections.presetName = preset.name;
 
           // 重新渲染所有步骤以更新显示
           if (this.talents) this.renderTalents();
