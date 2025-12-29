@@ -3587,7 +3587,7 @@
         border-color: #ffeb3b;
       }
 
-      /* 快速预选界面背景 */
+      /* 快速预选界面 */
       #quickPresetScreen {
         position: relative;
         overflow: visible;
@@ -3601,23 +3601,6 @@
         box-sizing: border-box;
       }
 
-      #quickPresetScreen::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: url('https://i.ibb.co/67Vv5CT9/image.jpg');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-        opacity: 0.3;
-        z-index: -1;
-        filter: blur(2px);
-      }
-
       #quickPresetScreen .initial-content {
         position: relative;
         z-index: 1;
@@ -3628,13 +3611,284 @@
         box-sizing: border-box;
       }
 
+      /* 预选界面头部控制栏 */
+      .preset-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .preset-search-box {
+        flex: 1;
+        min-width: 200px;
+        padding: 10px 15px;
+        border: 2px solid rgba(139, 69, 19, 0.3);
+        border-radius: 8px;
+        font-size: 14px;
+        background: rgba(244, 241, 232, 0.95);
+        color: #654321;
+        box-sizing: border-box;
+      }
+
+      .preset-search-box:focus {
+        outline: none;
+        border-color: #8b4513;
+        box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+      }
+
+      .preset-filter-btn {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #8b4513 0%, #654321 100%);
+        color: #f4f1e8;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .preset-filter-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+      }
+
+      /* 分类标签栏 */
+      .preset-category-tags {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        padding-bottom: 15px;
+        border-bottom: 2px solid rgba(139, 69, 19, 0.2);
+      }
+
+      .preset-category-tag {
+        padding: 8px 16px;
+        background: rgba(139, 69, 19, 0.1);
+        border: 2px solid rgba(139, 69, 19, 0.3);
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: #8b4513;
+        transition: all 0.3s ease;
+      }
+
+      .preset-category-tag:hover {
+        background: rgba(139, 69, 19, 0.2);
+        border-color: #8b4513;
+        transform: translateY(-2px);
+      }
+
+      .preset-category-tag.active {
+        background: linear-gradient(135deg, #8b4513 0%, #654321 100%);
+        color: #f4f1e8;
+        border-color: #8b4513;
+      }
+
+      /* 网格布局 */
+      .preset-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      /* 卡片样式 - 紧凑版 */
+      .preset-card {
+        position: relative;
+        background: linear-gradient(145deg, rgba(244, 241, 232, 0.95) 0%, rgba(232, 224, 208, 0.95) 100%);
+        border: 2px solid rgba(139, 69, 19, 0.3);
+        border-radius: 12px;
+        padding: 0;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .preset-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(139, 69, 19, 0.3);
+        border-color: #8b4513;
+      }
+
+      .preset-card.expanded {
+        min-height: auto;
+      }
+
+      .preset-card-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.2;
+        transition: opacity 0.3s ease;
+        z-index: 0;
+      }
+
+      .preset-card:hover .preset-card-background {
+        opacity: 0.3;
+      }
+
+      .preset-card-content {
+        position: relative;
+        z-index: 1;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(
+          180deg,
+          rgba(244, 241, 232, 0.95) 0%,
+          rgba(244, 241, 232, 0.9) 50%,
+          rgba(244, 241, 232, 0.95) 100%
+        );
+      }
+
+      .preset-card-header {
+        padding: 15px;
+        background: linear-gradient(135deg, rgba(139, 69, 19, 0.15) 0%, rgba(139, 69, 19, 0.08) 100%);
+        border-bottom: 2px solid rgba(139, 69, 19, 0.15);
+        backdrop-filter: blur(5px);
+      }
+
+      .preset-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #8b4513;
+        margin: 0 0 8px 0;
+        line-height: 1.4;
+        text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+      }
+
+      .preset-card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .preset-card-tag {
+        display: inline-block;
+        padding: 3px 8px;
+        background: rgba(139, 69, 19, 0.15);
+        color: #8b4513;
+        border: 1px solid rgba(139, 69, 19, 0.3);
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+
+      .preset-card-body {
+        padding: 15px;
+        flex: 1;
+        display: none;
+      }
+
+      .preset-card.expanded .preset-card-body {
+        display: block;
+      }
+
+      .preset-card-description {
+        font-size: 13px;
+        color: #654321;
+        line-height: 1.6;
+        margin: 0;
+        opacity: 0.95;
+      }
+
+      .preset-card-footer {
+        padding: 12px 15px;
+        background: rgba(139, 69, 19, 0.05);
+        border-top: 1px solid rgba(139, 69, 19, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .preset-card-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background: linear-gradient(135deg, #8b4513 0%, #654321 100%);
+        color: #f4f1e8;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .preset-card-featured {
+        background: linear-gradient(145deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%);
+        border: 3px solid #ffd700;
+        box-shadow: 0 8px 32px rgba(255, 215, 0, 0.3);
+      }
+
+      /* 筛选菜单 */
+      .preset-filter-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .preset-filter-modal.show {
+        display: flex;
+      }
+
+      .preset-filter-content {
+        background: linear-gradient(135deg, #f4f1e8 0%, #e8e0d0 100%);
+        border: 4px solid #8b4513;
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      }
+
+      .preset-filter-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .preset-filter-item {
+        padding: 12px;
+        background: rgba(139, 69, 19, 0.1);
+        border: 2px solid rgba(139, 69, 19, 0.2);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .preset-filter-item:hover {
+        background: rgba(139, 69, 19, 0.2);
+        border-color: #8b4513;
+      }
+
       #quickPresetContent {
         width: 100%;
         max-width: 100%;
-        min-height: auto;
-        max-height: none;
-        overflow-y: visible;
-        overflow-x: auto;
+        min-height: 400px;
         padding: 20px;
         box-sizing: border-box;
       }
@@ -3699,11 +3953,11 @@
             >，沉寂了好久又回归了，提前祝福大家圣诞节快乐，永远不死 ❄️🎄
           </p>
           <p style="margin-bottom: 12px; line-height: 1.8">
-            本卡是围绕特雷普学院构建的<strong>马世界观</strong>，正在向<strong>赛马娘大世界</strong>进化
+            本卡是围绕特雷普学院构建的<strong>赛马娘世界观</strong>，正在向<strong>赛马娘大世界</strong>进化
             🌟，同时我也会推出别的作品
           </p>
           <p style="margin-bottom: 12px; line-height: 1.8; color: #dc143c">
-            ⚠️ <strong>禁止商用，禁止二创，可二传仅限类脑、旅程</strong>
+            ⚠️ <strong>禁止商用，禁止二创，可二传表明出处即可</strong>
           </p>
           <p style="margin-bottom: 12px; line-height: 1.8; color: #228b22">💚 <strong>本卡免费游玩</strong></p>
           <p style="margin-bottom: 12px; line-height: 1.8">🤝 <strong>招募队友</strong>：一起来构思，分享制卡ideal</p>
@@ -3934,9 +4188,22 @@
     <!-- 🔥 快速预选独立界面 -->
     <div class="initial-screen" id="quickPresetScreen" style="display: none">
       <div class="initial-content" style="width: 100%; max-width: 100%; box-sizing: border-box">
-        <div class="initial-header">
-          <h1>⚡ 快速预选开局</h1>
-          <p class="subtitle">选择一个预设开局，快速开始你的训练员生涯</p>
+        <div class="initial-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+          <div>
+            <h1>⚡ 快速预选开局</h1>
+            <p class="subtitle">选择一个预设开局，快速开始你的训练员生涯</p>
+          </div>
+          <button class="preset-filter-btn" id="presetFilterBtn">📋 分类筛选</button>
+        </div>
+
+        <!-- 搜索和分类控制栏 -->
+        <div class="preset-controls">
+          <input type="text" class="preset-search-box" id="presetSearchBox" placeholder="🔍 搜索预设（关键词、马娘名、标签...）" />
+        </div>
+
+        <!-- 分类标签栏 -->
+        <div class="preset-category-tags" id="presetCategoryTags">
+          <!-- 将通过JS动态生成 -->
         </div>
 
         <div
@@ -3961,6 +4228,19 @@
           >
             ← 返回
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 筛选菜单模态框 -->
+    <div class="preset-filter-modal" id="presetFilterModal">
+      <div class="preset-filter-content">
+        <h2 style="color: #8b4513; margin-bottom: 20px;">选择分类</h2>
+        <div class="preset-filter-list" id="presetFilterList">
+          <!-- 将通过JS动态生成 -->
+        </div>
+        <div style="margin-top: 20px; text-align: right;">
+          <button class="preset-filter-btn" id="closeFilterModal">关闭</button>
         </div>
       </div>
     </div>
@@ -10780,7 +11060,7 @@
           ];
         }
 
-        // 🔥 显示快速预选独立界面（不再是弹窗）
+        // 🔥 显示快速预选独立界面（网格布局+分类+搜索）
         showQuickPresetMenu() {
           // 隐藏初始界面，显示快速预选界面
           $('#initialScreen').hide();
@@ -10799,79 +11079,182 @@
 
           const presets = this.getQuickPresets();
 
-          // 按分组组织预设
-          const groupedPresets = {};
-          presets.forEach((preset, index) => {
-            const group = preset.group || '其他';
-            if (!groupedPresets[group]) {
-              groupedPresets[group] = [];
+          // 提取所有分类
+          const categories = new Set();
+          presets.forEach(preset => {
+            if (preset.group) {
+              categories.add(preset.group);
             }
-            groupedPresets[group].push({ ...preset, originalIndex: index });
           });
+          const categoryList = Array.from(categories).sort();
 
-          // 🔥 生成美化后的界面内容（游戏平台风格）
+          // 生成分类标签
+          let categoryTagsHtml = '<span class="preset-category-tag active" data-category="全部">全部</span>';
+          categoryList.forEach(category => {
+            categoryTagsHtml += `<span class="preset-category-tag" data-category="${category}">${category}</span>`;
+          });
+          $('#presetCategoryTags').html(categoryTagsHtml);
+
+          // 生成筛选菜单
+          let filterListHtml = '<div class="preset-filter-item" data-category="全部">全部</div>';
+          categoryList.forEach(category => {
+            filterListHtml += `<div class="preset-filter-item" data-category="${category}">${category}</div>`;
+          });
+          $('#presetFilterList').html(filterListHtml);
+
+          // 存储当前状态
+          this.currentPresets = presets;
+          this.currentLastPreset = lastPreset;
+          this.currentCategory = '全部';
+          this.currentSearchTerm = '';
+
+          // 渲染预设卡片
+          this.renderPresetCards(presets, lastPreset, '全部', '');
+
+          // 绑定事件
+          this.bindPresetEvents();
+        }
+
+        // 渲染预设卡片
+        renderPresetCards(presets, lastPreset, category, searchTerm) {
           let contentHtml = '';
 
-          // 🔥 如果有上次选择，在最前面显示
-          if (lastPreset && (lastPreset.uma || lastPreset.background || lastPreset.location)) {
-            contentHtml += '<div class="preset-cards-grid" style="margin-bottom: 30px;">';
-            const lastUmaIllustration = lastPreset.uma ? this.getUmaIllustration(lastPreset.uma) : null;
-            contentHtml += `<button class="preset-card preset-card-featured preset-option-btn" data-preset="last">
-              ${lastUmaIllustration ? `<div class="preset-card-background" style="background-image: url('${lastUmaIllustration}');"></div>` : ''}
-              <div class="preset-card-content">
-                <div class="preset-card-header">
-                  <div class="preset-card-title">${lastPreset.name || '上次选择'}</div>
-                </div>
-                <div class="preset-card-body">
-                  <p class="preset-card-description">${lastPreset.description || '点击加载上次保存的开局配置'}</p>
-                </div>
-                <div class="preset-card-footer">
-                  <span class="preset-card-badge">继续游戏</span>
-                </div>
-              </div>
-            </button>`;
-            contentHtml += '</div>';
+          // 筛选预设
+          let filteredPresets = presets;
+          if (category !== '全部') {
+            filteredPresets = presets.filter(p => p.group === category);
+          }
+          if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            filteredPresets = filteredPresets.filter(p => 
+              p.name.toLowerCase().includes(term) ||
+              (p.uma && p.uma.toLowerCase().includes(term)) ||
+              (p.description && p.description.toLowerCase().includes(term)) ||
+              (p.group && p.group.toLowerCase().includes(term))
+            );
           }
 
-          // 显示所有预设（不再按分组）
-          contentHtml += '<div class="preset-cards-grid">';
-          presets.forEach((preset, index) => {
+          // 如果有上次选择且符合筛选条件，在最前面显示
+          if (lastPreset && (lastPreset.uma || lastPreset.background || lastPreset.location)) {
+            const shouldShowLast = 
+              (category === '全部' || lastPreset.group === category) &&
+              (!searchTerm || 
+                lastPreset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (lastPreset.uma && lastPreset.uma.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (lastPreset.description && lastPreset.description.toLowerCase().includes(searchTerm.toLowerCase()))
+              );
+
+            if (shouldShowLast) {
+              const lastUmaIllustration = lastPreset.uma ? this.getUmaIllustration(lastPreset.uma) : null;
+              contentHtml += this.generatePresetCard(lastPreset, 'last', true, lastUmaIllustration);
+            }
+          }
+
+          // 显示筛选后的预设
+          filteredPresets.forEach((preset, index) => {
             const umaIllustration = preset.uma ? this.getUmaIllustration(preset.uma) : null;
-            contentHtml += `<button class="preset-card preset-option-btn" data-index="${index}">
+            const originalIndex = presets.findIndex(p => p === preset);
+            contentHtml += this.generatePresetCard(preset, originalIndex, false, umaIllustration);
+          });
+
+          // 更新界面内容
+          $('#quickPresetContent').html(`<div class="preset-cards-grid">${contentHtml}</div>`);
+
+          // 重新绑定卡片点击事件
+          $('.preset-card').on('click', e => {
+            e.stopPropagation();
+            const card = $(e.currentTarget);
+            if (card.hasClass('expanded')) {
+              // 如果已展开，则应用预设
+              const presetData = card.data('preset');
+              const index = card.data('index');
+              if (presetData === 'last') {
+                this.loadSavedPreset(this.currentLastPreset);
+                $('#quickPresetScreen').hide();
+                $('#gameContainer').show();
+              } else if (index !== undefined) {
+                this.applyQuickPreset(this.currentPresets[index]);
+                $('#quickPresetScreen').hide();
+                $('#gameContainer').show();
+              }
+            } else {
+              // 展开卡片显示描述
+              $('.preset-card').removeClass('expanded');
+              card.addClass('expanded');
+            }
+          });
+        }
+
+        // 生成预设卡片HTML
+        generatePresetCard(preset, index, isLast, umaIllustration) {
+          const isFeatured = isLast;
+          const presetData = isLast ? 'last' : index;
+          const badgeText = isLast ? '继续游戏' : '开始';
+          
+          return `
+            <div class="preset-card ${isFeatured ? 'preset-card-featured' : ''} preset-option-btn" data-preset="${presetData}" data-index="${index}">
               ${umaIllustration ? `<div class="preset-card-background" style="background-image: url('${umaIllustration}');"></div>` : ''}
               <div class="preset-card-content">
                 <div class="preset-card-header">
-                  <div class="preset-card-title">${preset.name}</div>
+                  <div class="preset-card-title">${preset.name || (isLast ? '上次选择' : '预设')}</div>
+                  <div class="preset-card-tags">
+                    ${preset.uma ? `<span class="preset-card-tag">${preset.uma}</span>` : ''}
+                    ${preset.group ? `<span class="preset-card-tag">${preset.group}</span>` : ''}
+                  </div>
                 </div>
                 <div class="preset-card-body">
-                  <p class="preset-card-description">${preset.description || '暂无描述'}</p>
+                  <p class="preset-card-description">${preset.description || (isLast ? '点击加载上次保存的开局配置' : '暂无描述')}</p>
                 </div>
                 <div class="preset-card-footer">
-                  <span class="preset-card-badge">开始</span>
+                  <span class="preset-card-badge">${badgeText}</span>
                 </div>
               </div>
-            </button>`;
+            </div>
+          `;
+        }
+
+        // 绑定预设界面事件
+        bindPresetEvents() {
+          // 分类标签点击
+          $('.preset-category-tag').off('click').on('click', e => {
+            const category = $(e.currentTarget).data('category');
+            $('.preset-category-tag').removeClass('active');
+            $(e.currentTarget).addClass('active');
+            this.currentCategory = category;
+            this.renderPresetCards(this.currentPresets, this.currentLastPreset, category, this.currentSearchTerm);
           });
-          contentHtml += '</div>';
 
-          // 更新界面内容
-          $('#quickPresetContent').html(contentHtml);
+          // 搜索框输入
+          $('#presetSearchBox').off('input').on('input', e => {
+            const searchTerm = $(e.target).val();
+            this.currentSearchTerm = searchTerm;
+            this.renderPresetCards(this.currentPresets, this.currentLastPreset, this.currentCategory, searchTerm);
+          });
 
-          // 绑定事件
-          $('.preset-option-btn').on('click', e => {
-            const presetData = $(e.currentTarget).data('preset');
-            if (presetData === 'last') {
-              // 加载上次选择
-              this.loadSavedPreset(lastPreset);
-              // 返回游戏界面
-              $('#quickPresetScreen').hide();
-              $('#gameContainer').show();
-            } else {
-              const index = $(e.currentTarget).data('index');
-              this.applyQuickPreset(presets[index]);
-              // 返回游戏界面
-              $('#quickPresetScreen').hide();
-              $('#gameContainer').show();
+          // 筛选按钮
+          $('#presetFilterBtn').off('click').on('click', () => {
+            $('#presetFilterModal').addClass('show');
+          });
+
+          // 筛选菜单项点击
+          $('.preset-filter-item').off('click').on('click', e => {
+            const category = $(e.currentTarget).data('category');
+            $('.preset-category-tag').removeClass('active');
+            $(`.preset-category-tag[data-category="${category}"]`).addClass('active');
+            this.currentCategory = category;
+            this.renderPresetCards(this.currentPresets, this.currentLastPreset, category, this.currentSearchTerm);
+            $('#presetFilterModal').removeClass('show');
+          });
+
+          // 关闭筛选菜单
+          $('#closeFilterModal').off('click').on('click', () => {
+            $('#presetFilterModal').removeClass('show');
+          });
+
+          // 点击遮罩层关闭
+          $('#presetFilterModal').off('click').on('click', e => {
+            if ($(e.target).hasClass('preset-filter-modal')) {
+              $('#presetFilterModal').removeClass('show');
             }
           });
         }
