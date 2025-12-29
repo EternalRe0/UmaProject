@@ -3386,10 +3386,32 @@
       }
 
       .preset-cards-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        display: flex;
         gap: 20px;
         margin-top: 20px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 10px;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .preset-cards-grid::-webkit-scrollbar {
+        height: 8px;
+      }
+
+      .preset-cards-grid::-webkit-scrollbar-track {
+        background: rgba(139, 69, 19, 0.1);
+        border-radius: 4px;
+      }
+
+      .preset-cards-grid::-webkit-scrollbar-thumb {
+        background: rgba(139, 69, 19, 0.3);
+        border-radius: 4px;
+      }
+
+      .preset-cards-grid::-webkit-scrollbar-thumb:hover {
+        background: rgba(139, 69, 19, 0.5);
       }
 
       .preset-card {
@@ -3402,9 +3424,44 @@
         cursor: pointer;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        flex: 0 0 380px;
+        min-width: 380px;
+        max-width: 380px;
+        height: 280px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .preset-card-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.15;
+        transition: opacity 0.4s ease;
+        z-index: 0;
+      }
+
+      .preset-card:hover .preset-card-background {
+        opacity: 0.25;
+      }
+
+      .preset-card-content {
+        position: relative;
+        z-index: 1;
         height: 100%;
         display: flex;
         flex-direction: column;
+        background: linear-gradient(
+          180deg,
+          rgba(244, 241, 232, 0.95) 0%,
+          rgba(244, 241, 232, 0.9) 50%,
+          rgba(244, 241, 232, 0.95) 100%
+        );
       }
 
       .preset-card::before {
@@ -3432,8 +3489,9 @@
 
       .preset-card-header {
         padding: 20px;
-        background: linear-gradient(135deg, rgba(139, 69, 19, 0.1) 0%, rgba(139, 69, 19, 0.05) 100%);
+        background: linear-gradient(135deg, rgba(139, 69, 19, 0.15) 0%, rgba(139, 69, 19, 0.08) 100%);
         border-bottom: 2px solid rgba(139, 69, 19, 0.15);
+        backdrop-filter: blur(5px);
       }
 
       .preset-card-title {
@@ -3502,11 +3560,41 @@
         border-color: #ffeb3b;
       }
 
+      /* 快速预选界面背景 */
+      #quickPresetScreen {
+        position: relative;
+        overflow: hidden;
+      }
+
+      #quickPresetScreen::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('https://i.ibb.co/mC553Ftz/background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        opacity: 0.3;
+        z-index: -1;
+        filter: blur(2px);
+      }
+
+      #quickPresetScreen .initial-content {
+        position: relative;
+        z-index: 1;
+      }
+
       /* 响应式设计 */
       @media (max-width: 768px) {
-        .preset-cards-grid {
-          grid-template-columns: 1fr;
-          gap: 15px;
+        .preset-card {
+          flex: 0 0 320px;
+          min-width: 320px;
+          max-width: 320px;
+          height: 240px;
         }
 
         .preset-group-container {
@@ -6701,6 +6789,103 @@
             '胜利奖券',
             '超常骏骥',
           ];
+        }
+
+        // 获取马娘立绘（用于预设卡片背景）
+        getUmaIllustration(name) {
+          // ImgBB链接映射表 - 转换为直接图片URL格式
+          const illustrations = {
+            艾尼斯风神: 'https://i.ibb.co/TBBPFHGN/1.jpg',
+            爱丽数码: 'https://i.ibb.co/BVFjpv3x/2.jpg',
+            爱丽速子: 'https://i.ibb.co/0VVw0n9v/3.jpg',
+            爱慕织姬: 'https://i.ibb.co/7JCMFdbZ/4.jpg',
+            爱如往昔: 'https://i.ibb.co/twNJj50d/5.jpg',
+            八重无敌: 'https://i.ibb.co/jkRvSbwJ/6.jpg',
+            北部玄驹: 'https://i.ibb.co/LhtsJKG4/7.jpg',
+            北港火山: 'https://i.ibb.co/s4cdCqN/8.jpg',
+            草上飞: 'https://i.ibb.co/9HQx9mt7/10.jpg',
+            茶座梦想: 'https://i.ibb.co/b5LSxCG2/11.jpg',
+            超级溪流: 'https://i.ibb.co/qFDWg1DJ/12.jpg',
+            超级小海湾: 'https://i.ibb.co/p68jjwMs/13.jpg',
+            成田白仁: 'https://i.ibb.co/5Vb0xXc/14.jpg',
+            成田路: 'https://i.ibb.co/HLbkm5HY/15.jpg',
+            创升: 'https://i.ibb.co/hF4VCG4r/16.jpg',
+            创世驹: 'https://i.ibb.co/VW0WqpLT/17.jpg',
+            春乌拉拉: 'https://i.ibb.co/8nvGdQrs/18.jpg',
+            大和赤骥: 'https://i.ibb.co/qY6QZ2mr/19.jpg',
+            大鸣大放: 'https://i.ibb.co/RTsKxZbg/20.jpg',
+            大树快车: 'https://i.ibb.co/HpLTxDW0/21.jpg',
+            大拓太阳神: 'https://i.ibb.co/jk1Vq85K/22.jpg',
+            待兼福来: 'https://i.ibb.co/yFNvbyHN/23.jpg',
+            帝王光辉: 'https://i.ibb.co/zVVRH3fh/24.jpg',
+            第一红宝石: 'https://i.ibb.co/vCmZvjyd/25.jpg',
+            东海帝王: 'https://i.ibb.co/wF2TNNRY/26.jpg',
+            东南逐渐: 'https://i.ibb.co/9HPmxt5M/27.jpg',
+            多旺达: 'https://i.ibb.co/k242vgqj/28.jpg',
+            伏特加: 'https://i.ibb.co/0jSNffQs/29.jpg',
+            富士奇石: 'https://i.ibb.co/Y4QmJyKc/30.jpg',
+            高尚骏逸: 'https://i.ibb.co/gZDdTFLK/31.jpg',
+            葛城王牌: 'https://i.ibb.co/jvxvCbZg/32.jpg',
+            贵妇人: 'https://i.ibb.co/rfGzYcHN/33.jpg',
+            好歌剧: 'https://i.ibb.co/5X7PRgCc/34.jpg',
+            荒漠英雄: 'https://i.ibb.co/nsSNdvr4/35.jpg',
+            黄金城市: 'https://i.ibb.co/JR45Mqg6/36.jpg',
+            黄金船: 'https://i.ibb.co/q64v4Jc/37.jpg',
+            黄金巨匠: 'https://i.ibb.co/vvP5DKF6/38.jpg',
+            黄金旅程: 'https://i.ibb.co/qMDwc0HH/39.jpg',
+            极峰: 'https://i.ibb.co/VWrQb9sY/40.jpg',
+            金镇之光: 'https://i.ibb.co/wN5yy7zR/41.jpg',
+            骏川手纲: 'https://i.ibb.co/JWc5JKBF/42.jpg',
+            凯旋芭蕾: 'https://i.ibb.co/NndtdrcD/43.jpg',
+            凯旋门: 'https://i.ibb.co/WNK4h74C/44.jpg',
+            里见光钻: 'https://i.ibb.co/spvL6dfG/45.jpg',
+            里见皇冠: 'https://i.ibb.co/7t9Q1BjH/46.jpg',
+            菱亚马逊: 'https://i.ibb.co/Ng44MmKR/47.jpg',
+            菱钻奇宝: 'https://i.ibb.co/LdpzXs9t/48.jpg',
+            鲁道夫象征: 'https://i.ibb.co/VF8vcFW/49.jpg',
+            曼城茶座: 'https://i.ibb.co/1YCR384s/50.jpg',
+            美妙姿势: 'https://i.ibb.co/ynJnhf3B/51.jpg',
+            美浦波旁: 'https://i.ibb.co/WSFS9vS/52.jpg',
+            梦之旅: 'https://i.ibb.co/7dtbvS2W/53.jpg',
+            迷人景致: 'https://i.ibb.co/350jS5Rj/54.jpg',
+            米浴: 'https://i.ibb.co/wFFChjLj/55.jpg',
+            名将怒涛: 'https://i.ibb.co/70Vbzyf/56.jpg',
+            摩耶重炮: 'https://i.ibb.co/4gYX0y5j/57.jpg',
+            谋勇兼备: 'https://i.ibb.co/TN9Qvwv/58.jpg',
+            目白阿尔丹: 'https://i.ibb.co/x858SBsK/59.jpg',
+            目白多伯: 'https://i.ibb.co/67pJd0TL/60.jpg',
+            目白高峰: 'https://i.ibb.co/F4F2xzBC/61.jpg',
+            目白光明: 'https://i.ibb.co/0yfGrSX3/62.jpg',
+            目白麦昆: 'https://i.ibb.co/YB2cRX7R/63.jpg',
+            目白善信: 'https://i.ibb.co/67pJd0TL/64.jpg',
+            奇锐骏: 'https://i.ibb.co/C3pgbYtR/65.jpg',
+            气槽: 'https://i.ibb.co/XN1jwpy/66.jpg',
+            千明代表: 'https://i.ibb.co/dw39G1tM/67.jpg',
+            强击: 'https://i.ibb.co/PvzHSQ3F/68.jpg',
+            青云天空: 'https://i.ibb.co/hRBZvbdr/69.jpg',
+            秋川理事长: 'https://i.ibb.co/V0RTQt8m/70.jpg',
+            荣进闪耀: 'https://i.ibb.co/MDDxkFQQ/71.jpg',
+            森林宝穴: 'https://i.ibb.co/ZQ3jYwV/72.jpg',
+            神鹰: 'https://i.ibb.co/93cWBhr8/73.jpg',
+            双涡轮: 'https://i.ibb.co/mrt9zhk1/74.jpg',
+            特别周: 'https://i.ibb.co/LXjf0GX2/75.jpg',
+            天狼星象征: 'https://i.ibb.co/rR42c3w9/76.jpg',
+            丸善斯基: 'https://i.ibb.co/PvvFdzrX/77.jpg',
+            无声铃鹿: 'https://i.ibb.co/ccBX8pLf/78.jpg',
+            西野花: 'https://i.ibb.co/kF2xgxS/79.jpg',
+            小栗帽: 'https://i.ibb.co/WNdbysyS/80.jpg',
+            小林历奇: 'https://i.ibb.co/7xby5ySF/81.jpg',
+            新宇宙: 'https://i.ibb.co/ccC77JQh/82.jpg',
+            幸目: 'https://i.ibb.co/zWS4yQLw/83.jpg',
+            樱花千代王: 'https://i.ibb.co/8gNDhhL6/84.jpg',
+            玉藻十字: 'https://i.ibb.co/35DJJffz/85.jpg',
+            真弓快车: 'https://i.ibb.co/G3vBWDHv/86.jpg',
+            真机伶: 'https://i.ibb.co/CKXFzBxm/87.jpg',
+            中山庆典: 'https://i.ibb.co/4Zn59q7d/88.jpg',
+            周日宁静: 'https://i.ibb.co/MkH2QxVd/89.jpg',
+            卓芙: 'https://i.ibb.co/HD8D8MNV/90.jpg',
+          };
+          return illustrations[name] || null;
         }
 
         // 获取马娘头像
@@ -10564,15 +10749,19 @@
               上次选择
             </h3>`;
             contentHtml += '<div class="preset-cards-grid">';
+            const lastUmaIllustration = lastPreset.uma ? this.getUmaIllustration(lastPreset.uma) : null;
             contentHtml += `<button class="preset-card preset-card-featured preset-option-btn" data-preset="last">
-              <div class="preset-card-header">
-                <div class="preset-card-title">${lastPreset.name || '上次选择'}</div>
-              </div>
-              <div class="preset-card-body">
-                <p class="preset-card-description">${lastPreset.description || '点击加载上次保存的开局配置'}</p>
-              </div>
-              <div class="preset-card-footer">
-                <span class="preset-card-badge">继续游戏</span>
+              ${lastUmaIllustration ? `<div class="preset-card-background" style="background-image: url('${lastUmaIllustration}');"></div>` : ''}
+              <div class="preset-card-content">
+                <div class="preset-card-header">
+                  <div class="preset-card-title">${lastPreset.name || '上次选择'}</div>
+                </div>
+                <div class="preset-card-body">
+                  <p class="preset-card-description">${lastPreset.description || '点击加载上次保存的开局配置'}</p>
+                </div>
+                <div class="preset-card-footer">
+                  <span class="preset-card-badge">继续游戏</span>
+                </div>
               </div>
             </button>`;
             contentHtml += '</div></div>';
@@ -10585,15 +10774,19 @@
             contentHtml += '<div class="preset-cards-grid">';
 
             groupedPresets[group].forEach(preset => {
+              const umaIllustration = preset.uma ? this.getUmaIllustration(preset.uma) : null;
               contentHtml += `<button class="preset-card preset-option-btn" data-index="${preset.originalIndex}">
-                <div class="preset-card-header">
-                  <div class="preset-card-title">${preset.name}</div>
-                </div>
-                <div class="preset-card-body">
-                  <p class="preset-card-description">${preset.description}</p>
-                </div>
-                <div class="preset-card-footer">
-                  <span class="preset-card-badge">开始</span>
+                ${umaIllustration ? `<div class="preset-card-background" style="background-image: url('${umaIllustration}');"></div>` : ''}
+                <div class="preset-card-content">
+                  <div class="preset-card-header">
+                    <div class="preset-card-title">${preset.name}</div>
+                  </div>
+                  <div class="preset-card-body">
+                    <p class="preset-card-description">${preset.description}</p>
+                  </div>
+                  <div class="preset-card-footer">
+                    <span class="preset-card-badge">开始</span>
+                  </div>
                 </div>
               </button>`;
             });
