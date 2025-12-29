@@ -3375,14 +3375,14 @@
       }
 
       .preset-group-title {
-        font-size: 24px;
+        font-size: 20px;
         font-weight: 700;
         color: #8b4513;
-        margin: 0 0 25px 0;
-        padding-bottom: 15px;
-        border-bottom: 3px solid rgba(139, 69, 19, 0.3);
-        text-shadow: 2px 2px 4px rgba(139, 69, 19, 0.2);
-        letter-spacing: 1px;
+        margin: 0 0 20px 0;
+        padding-bottom: 12px;
+        border-bottom: 2px solid rgba(139, 69, 19, 0.2);
+        text-shadow: 1px 1px 3px rgba(139, 69, 19, 0.15);
+        letter-spacing: 0.5px;
       }
 
       .preset-cards-grid {
@@ -3503,6 +3503,13 @@
         text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
       }
 
+      .preset-card-tag-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+
       .preset-card-body {
         padding: 20px;
         flex: 1;
@@ -3511,12 +3518,18 @@
       }
 
       .preset-card-description {
-        font-size: 14px;
+        font-size: 13px;
         color: #654321;
-        line-height: 1.7;
+        line-height: 1.6;
         margin: 0;
         flex: 1;
-        opacity: 0.9;
+        opacity: 0.95;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .preset-card-footer {
@@ -3538,6 +3551,20 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+      }
+
+      .preset-card-tag {
+        display: inline-block;
+        padding: 4px 10px;
+        background: linear-gradient(135deg, rgba(139, 69, 19, 0.2) 0%, rgba(139, 69, 19, 0.15) 100%);
+        color: #8b4513;
+        border: 1px solid rgba(139, 69, 19, 0.3);
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        margin-bottom: 8px;
+        backdrop-filter: blur(5px);
       }
 
       /* 上次选择特殊样式 */
@@ -10779,10 +10806,13 @@
                 ${umaIllustration ? `<div class="preset-card-background" style="background-image: url('${umaIllustration}');"></div>` : ''}
                 <div class="preset-card-content">
                   <div class="preset-card-header">
+                    <div class="preset-card-tag-container">
+                      <span class="preset-card-tag">${preset.group || '其他'}</span>
+                    </div>
                     <div class="preset-card-title">${preset.name}</div>
                   </div>
                   <div class="preset-card-body">
-                    <p class="preset-card-description">${preset.description}</p>
+                    <p class="preset-card-description">${preset.description || '暂无描述'}</p>
                   </div>
                   <div class="preset-card-footer">
                     <span class="preset-card-badge">开始</span>
