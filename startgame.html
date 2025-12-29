@@ -3228,6 +3228,12 @@
         height: 280px;
         display: flex;
         flex-direction: column;
+        /* 🔥 确保触摸事件可以正常工作 */
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
+        z-index: 2;
       }
 
       .preset-card-background {
@@ -3300,6 +3306,9 @@
         margin: 0 0 8px 0;
         line-height: 1.4;
         text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+        position: relative;
+        z-index: 3;
+        pointer-events: none;
       }
 
       .preset-card-tag-container {
@@ -3314,6 +3323,9 @@
         flex: 1;
         display: flex;
         flex-direction: column;
+        position: relative;
+        z-index: 3;
+        pointer-events: none;
       }
 
       .preset-card-description {
@@ -3329,6 +3341,7 @@
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-overflow: ellipsis;
+        pointer-events: none;
       }
 
       .preset-card-footer {
@@ -3409,25 +3422,33 @@
 
       #quickPresetScreen .content-area {
         min-height: 300px;
-        max-height: calc(100vh - 200px);
-        overflow-y: auto;
+        max-height: none;
+        overflow-y: visible;
         position: relative;
         padding: 20px;
         background: transparent;
         flex: 1;
+        display: flex;
+        flex-direction: column;
       }
 
       /* 🔥 预选内容区域 - 在scroll-container内 */
       #quickPresetScreen .scroll-container {
-        max-height: calc(100vh - 400px);
+        max-height: calc(100vh - 180px);
         overflow-y: auto;
         overflow-x: hidden;
+        padding-bottom: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
       }
 
       #quickPresetContent {
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
+        padding-bottom: 200px;
+        min-height: 100%;
       }
 
       #quickPresetContent::-webkit-scrollbar {
@@ -3527,7 +3548,7 @@
         border-color: #8b4513;
       }
 
-      /* 网格布局 */
+      /* 网格布局 - 桌面端默认 */
       .preset-cards-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -3535,9 +3556,17 @@
         margin-top: 20px;
       }
 
-      @media (min-width: 768px) {
+      /* 平板和桌面端优化 */
+      @media (min-width: 769px) {
         .preset-cards-grid {
           grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        }
+      }
+
+      /* 大屏幕优化 */
+      @media (min-width: 1200px) {
+        .preset-cards-grid {
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         }
       }
 
@@ -3565,6 +3594,18 @@
         transform: translateY(-8px) scale(1.02);
         box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
         border-color: rgba(255, 255, 255, 0.4);
+      }
+
+      /* 触摸设备优化 */
+      .touch-device .preset-card {
+        touch-action: manipulation;
+        -webkit-touch-callout: none;
+      }
+
+      .touch-device .preset-card:active,
+      .preset-card.touching {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
       }
 
       .preset-card.expanded {
@@ -3801,21 +3842,259 @@
         box-sizing: border-box;
       }
 
-      /* 响应式设计 */
+      /* 响应式设计 - 手机端优化 */
       @media (max-width: 768px) {
-        .preset-card {
-          flex: 0 0 320px;
-          min-width: 320px;
-          max-width: 320px;
-          height: 240px;
+        /* 快速预选界面容器优化 */
+        #quickPresetScreen .container {
+          padding: 10px;
         }
 
+        #quickPresetScreen .content-area {
+          padding: 10px;
+        }
+
+        #quickPresetScreen .scroll-container {
+          max-height: calc(100vh - 160px);
+          padding: 10px;
+          padding-bottom: 0;
+        }
+
+        /* 搜索框优化 */
+        .preset-controls {
+          margin-bottom: 15px;
+          gap: 10px;
+        }
+
+        .preset-search-box {
+          min-width: 0;
+          width: 100%;
+          padding: 12px 15px;
+          font-size: 14px;
+        }
+
+        /* 分类标签优化 */
+        .preset-category-tags {
+          gap: 8px;
+          margin-bottom: 15px;
+          padding-bottom: 12px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+        }
+
+        .preset-category-tags::-webkit-scrollbar {
+          height: 4px;
+        }
+
+        .preset-category-tag {
+          padding: 6px 12px;
+          font-size: 12px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        /* 预设卡片网格优化 - 手机端单列显示 */
+        .preset-cards-grid {
+          grid-template-columns: 1fr !important;
+          gap: 15px;
+          margin-top: 15px;
+          padding: 0;
+        }
+
+        /* 预设卡片优化 */
+        .preset-card {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+          flex: none !important;
+          min-height: 500px;
+          aspect-ratio: 3 / 4;
+          margin: 0 auto;
+        }
+
+        /* 卡片标题优化 */
+        .preset-card-title {
+          font-size: 16px;
+          top: 12px;
+          left: 12px;
+          right: 12px;
+          line-height: 1.4;
+        }
+
+        /* 卡片标签优化 */
+        .preset-card-tags {
+          top: 50px;
+          left: 12px;
+          right: 12px;
+          gap: 5px;
+        }
+
+        .preset-card-tag {
+          padding: 3px 8px;
+          font-size: 9px;
+        }
+
+        /* 卡片描述优化 */
+        .preset-card-body {
+          padding: 15px;
+          max-height: 60%;
+        }
+
+        .preset-card-description {
+          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        /* 展开状态优化 */
+        .preset-card.expanded {
+          min-height: auto;
+          max-height: 80vh;
+        }
+
+        .preset-card.expanded .preset-card-body {
+          max-height: 70%;
+        }
+
+        /* 预设分组容器优化 */
         .preset-group-container {
-          padding: 20px;
+          padding: 15px;
+          margin-bottom: 25px;
+          border-radius: 15px;
         }
 
         .preset-group-title {
+          font-size: 18px;
+          margin-bottom: 15px;
+        }
+
+        /* 滚动容器优化 */
+        #quickPresetContent {
+          padding: 10px;
+          min-height: 300px;
+          padding-bottom: 150px;
+        }
+
+        /* 快速预选界面头部优化 */
+        #quickPresetScreen .scroll-header {
+          padding: 15px 10px;
+        }
+
+        #quickPresetScreen .scroll-header h2 {
+          font-size: 22px;
+          margin-bottom: 8px;
+        }
+
+        #quickPresetScreen .scroll-header .scroll-subtitle {
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        /* 返回按钮优化 */
+        #quickPresetScreen .back-arrow-btn {
+          position: relative;
+          top: 0;
+          left: 0;
+          transform: none;
+          width: 50px;
+          height: 50px;
+          font-size: 24px;
+          margin: 15px auto;
+          display: flex;
+        }
+
+        #quickPresetScreen .back-arrow-btn:hover {
+          transform: translateY(-2px);
+        }
+
+        #quickPresetScreen .back-arrow-btn:active {
+          transform: translateY(0);
+        }
+
+        /* 确认总结界面手机端优化 */
+        .summary-container {
+          flex-direction: column !important;
+          gap: 15px !important;
+          padding: 0 5px !important;
+        }
+
+        .summary-card {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+          padding: 18px !important;
+          box-sizing: border-box !important;
+          overflow: hidden !important;
+        }
+
+        .summary-selections,
+        .summary-background {
+          border: 2px solid rgba(139, 105, 20, 0.3) !important;
+        }
+      }
+
+      /* 超小屏幕优化 */
+      @media (max-width: 480px) {
+        #quickPresetScreen .container {
+          padding: 8px;
+        }
+
+        #quickPresetScreen .scroll-header h2 {
           font-size: 20px;
+        }
+
+        #quickPresetScreen .scroll-header .scroll-subtitle {
+          font-size: 13px;
+        }
+
+        .preset-card {
+          min-height: 300px;
+        }
+
+        .preset-card-title {
+          font-size: 15px;
+          top: 10px;
+          left: 10px;
+          right: 10px;
+        }
+
+        .preset-card-tags {
+          top: 45px;
+          left: 10px;
+          right: 10px;
+        }
+
+        .preset-card-body {
+          padding: 12px;
+        }
+
+        .preset-card-description {
+          font-size: 12px;
+        }
+
+        .preset-category-tag {
+          padding: 5px 10px;
+          font-size: 11px;
+        }
+      }
+
+      /* 横屏手机优化 */
+      @media (max-width: 768px) and (orientation: landscape) {
+        .preset-cards-grid {
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 12px;
+        }
+
+        .preset-card {
+          min-height: 300px;
+        }
+
+        #quickPresetScreen .scroll-container {
+          max-height: calc(100vh - 100px);
+          padding-bottom: 0;
+        }
+
+        #quickPresetContent {
+          padding-bottom: 120px;
         }
       }
 
@@ -4788,6 +5067,10 @@
           // 🔥 返回按钮 - 从快速预选界面返回
           // 🔥 返回按钮 - 参考prevStep的方式，使用fadeOut和fadeIn动画
           this.bindTouchEvent('#backFromQuickPresetBtn', () => {
+            // 手机端退出全屏
+            if (this.deviceDetector.isMobile) {
+              this.exitFullscreen();
+            }
             $('#quickPresetScreen').fadeOut(800, () => {
               $('#initialScreen').fadeIn(800);
             });
@@ -5130,23 +5413,26 @@
           const btn = $('#showGameBtn');
           btn.prop('disabled', true).html('<span class="loading-spinner"></span> 加载中...');
 
-          // 模拟加载时间
-          this.safeSetTimeout(() => {
-            $('#initialScreen').fadeOut(800, () => {
-              $('#gameContainer').fadeIn(800, () => {
-                // 游戏界面显示后初始化步骤
-                this.renderCurrentStep();
-                this.updateProgress();
-                this.updateButtons();
-                btn.prop('disabled', false).text('🚀 开始游戏');
+          // 手机端自动全屏（立即执行，不等待）
+          if (this.deviceDetector.isMobile) {
+            this.requestFullscreen();
+          }
 
-                // 多次重试确保按钮正确显示
-                this.safeSetTimeout(() => this.updateButtons(), 100);
-                this.safeSetTimeout(() => this.updateButtons(), 300);
-                this.safeSetTimeout(() => this.updateButtons(), 500);
-              });
+          // 立即切换界面，不延迟
+          $('#initialScreen').fadeOut(400, () => {
+            $('#gameContainer').fadeIn(400, () => {
+              // 游戏界面显示后初始化步骤
+              this.renderCurrentStep();
+              this.updateProgress();
+              this.updateButtons();
+              btn.prop('disabled', false).text('🚀 开始游戏');
+
+              // 多次重试确保按钮正确显示
+              this.safeSetTimeout(() => this.updateButtons(), 100);
+              this.safeSetTimeout(() => this.updateButtons(), 300);
+              this.safeSetTimeout(() => this.updateButtons(), 500);
             });
-          }, 1500);
+          });
         }
 
         // 加载数据
@@ -8314,46 +8600,46 @@
 
           // 🔥 优化布局：左侧显示所有选择，右侧显示故事背景
           let html = `
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div class="summary-container" style="display: flex; gap: 20px; flex-wrap: wrap; width: 100%; box-sizing: border-box;">
               <!-- 左侧：所有选择 -->
-              <div style="flex: 1; min-width: 300px; background: rgba(255, 255, 255, 0.8); border-radius: 12px; padding: 20px; border: 2px solid rgba(139, 105, 20, 0.3);">
-                <h3 style="color: #8b4513; margin-bottom: 15px; font-size: 1.2em; border-bottom: 2px solid rgba(139, 69, 19, 0.3); padding-bottom: 10px;">选择总结</h3>
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(139, 69, 19, 0.1);">
-                    <span style="font-weight: bold; color: #8b4513;">天赋</span>
-                    <span style="color: #654321;">${selectedTalent ? selectedTalent.name : '未选择'}</span>
+              <div class="summary-card summary-selections" style="flex: 1; min-width: 280px; max-width: 100%; background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(244, 241, 232, 0.95) 100%); border-radius: 16px; padding: 24px; border: 3px solid rgba(139, 105, 20, 0.4); box-shadow: 0 8px 24px rgba(139, 69, 19, 0.15); box-sizing: border-box;">
+                <h3 style="color: #8b4513; margin-bottom: 18px; font-size: 1.3em; font-weight: 700; border-bottom: 3px solid rgba(139, 69, 19, 0.4); padding-bottom: 12px; text-shadow: 1px 1px 2px rgba(139, 69, 19, 0.1);">📋 选择总结</h3>
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(139, 69, 19, 0.15); background: rgba(255, 255, 255, 0.5); border-radius: 6px;">
+                    <span style="font-weight: 700; color: #8b4513; font-size: 1.05em;">天赋</span>
+                    <span style="color: #654321; font-weight: 600; font-size: 1em;">${selectedTalent ? selectedTalent.name : '未选择'}</span>
                   </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(139, 69, 19, 0.1);">
-                    <span style="font-weight: bold; color: #8b4513;">背景</span>
-                    <span style="color: #654321;">${selectedBackground ? selectedBackground.name : '未选择'}</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(139, 69, 19, 0.15); background: rgba(255, 255, 255, 0.5); border-radius: 6px;">
+                    <span style="font-weight: 700; color: #8b4513; font-size: 1.05em;">背景</span>
+                    <span style="color: #654321; font-weight: 600; font-size: 1em;">${selectedBackground ? selectedBackground.name : '未选择'}</span>
                   </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(139, 69, 19, 0.1);">
-                    <span style="font-weight: bold; color: #8b4513;">地点</span>
-                    <span style="color: #654321;">${selectedLocation ? selectedLocation.name : '未选择'}</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(139, 69, 19, 0.15); background: rgba(255, 255, 255, 0.5); border-radius: 6px;">
+                    <span style="font-weight: 700; color: #8b4513; font-size: 1.05em;">地点</span>
+                    <span style="color: #654321; font-weight: 600; font-size: 1em;">${selectedLocation ? selectedLocation.name : '未选择'}</span>
                   </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(139, 69, 19, 0.1);">
-                    <span style="font-weight: bold; color: #8b4513;">时间</span>
-                    <span style="color: #654321;">${selectedTime ? `${selectedTime.name} (${selectedTime.time})` : '未选择'}</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(139, 69, 19, 0.15); background: rgba(255, 255, 255, 0.5); border-radius: 6px;">
+                    <span style="font-weight: 700; color: #8b4513; font-size: 1.05em;">时间</span>
+                    <span style="color: #654321; font-weight: 600; font-size: 1em;">${selectedTime ? `${selectedTime.name} (${selectedTime.time})` : '未选择'}</span>
                   </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(139, 69, 19, 0.1);">
-                    <span style="font-weight: bold; color: #8b4513;">节日</span>
-                    <span style="color: #654321;">${selectedFestival ? selectedFestival.name : '未选择'}</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(139, 69, 19, 0.15); background: rgba(255, 255, 255, 0.5); border-radius: 6px;">
+                    <span style="font-weight: 700; color: #8b4513; font-size: 1.05em;">节日</span>
+                    <span style="color: #654321; font-weight: 600; font-size: 1em;">${selectedFestival ? selectedFestival.name : '未选择'}</span>
                   </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(139, 69, 19, 0.1);">
-                    <span style="font-weight: bold; color: #8b4513;">马娘</span>
-                    <span style="color: #654321;">${this.selections.umaMusume || '未选择'}</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(139, 69, 19, 0.15); background: rgba(255, 255, 255, 0.5); border-radius: 6px;">
+                    <span style="font-weight: 700; color: #8b4513; font-size: 1.05em;">马娘</span>
+                    <span style="color: #654321; font-weight: 600; font-size: 1em;">${this.selections.umaMusume || '未选择'}</span>
                   </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
-                    <span style="font-weight: bold; color: #8b4513;">道具</span>
-                    <span style="color: #654321;">${selectedItems.length > 0 ? selectedItems.map(item => item.icon).join(' ') : '无'}</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: rgba(255, 255, 255, 0.5); border-radius: 6px;">
+                    <span style="font-weight: 700; color: #8b4513; font-size: 1.05em;">道具</span>
+                    <span style="color: #654321; font-weight: 600; font-size: 1em;">${selectedItems.length > 0 ? selectedItems.map(item => item.icon).join(' ') : '无'}</span>
                   </div>
                 </div>
               </div>
               
               <!-- 右侧：故事背景 -->
-              <div style="flex: 1; min-width: 300px; background: rgba(255, 255, 255, 0.8); border-radius: 12px; padding: 20px; border: 2px solid rgba(139, 105, 20, 0.3);">
-                <h3 style="color: #8b4513; margin-bottom: 15px; font-size: 1.2em; border-bottom: 2px solid rgba(139, 69, 19, 0.3); padding-bottom: 10px;">故事背景</h3>
-                <div style="color: #654321; font-size: 0.95em; line-height: 1.8; text-align: left; padding: 10px;">
+              <div class="summary-card summary-background" style="flex: 1; min-width: 280px; max-width: 100%; background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(244, 241, 232, 0.95) 100%); border-radius: 16px; padding: 24px; border: 3px solid rgba(139, 105, 20, 0.4); box-shadow: 0 8px 24px rgba(139, 69, 19, 0.15); box-sizing: border-box;">
+                <h3 style="color: #8b4513; margin-bottom: 18px; font-size: 1.3em; font-weight: 700; border-bottom: 3px solid rgba(139, 69, 19, 0.4); padding-bottom: 12px; text-shadow: 1px 1px 2px rgba(139, 69, 19, 0.1);">📖 故事背景</h3>
+                <div style="color: #654321; font-size: 1em; line-height: 1.9; text-align: left; padding: 12px; background: rgba(255, 255, 255, 0.6); border-radius: 8px; border-left: 4px solid rgba(139, 69, 19, 0.3);">
                   ${storyBackground}
                 </div>
               </div>
@@ -8915,10 +9201,10 @@
           const nextBtn = $('#nextBtn');
           const startBtn = $('#startBtn');
 
-          // 上一步按钮：第一步和最后一步时显示"返回首页"，其他步骤显示"上一步"
+          // 上一步按钮：第一步时显示"返回首页"，其他步骤显示"上一步"
           if (prevBtn.length) {
             prevBtn.show();
-            if (this.currentStep === 1 || isLastStep) {
+            if (this.currentStep === 1) {
               prevBtn.text('← 返回首页').prop('disabled', false);
             } else {
               prevBtn.text('← 上一步').prop('disabled', !canGoPrev);
@@ -9112,13 +9398,17 @@
 
         // 上一步
         prevStep() {
-          if (this.currentStep > 1 && this.currentStep < this.totalSteps) {
+          if (this.currentStep > 1) {
             this.currentStep--;
             this.renderCurrentStep();
             this.updateProgress();
             this.updateButtons();
-          } else if (this.currentStep === 1 || this.currentStep === this.totalSteps) {
-            // 第一步或最后一步时，返回初始界面
+          } else if (this.currentStep === 1) {
+            // 第一步时，返回初始界面
+            // 手机端退出全屏
+            if (this.deviceDetector.isMobile) {
+              this.exitFullscreen();
+            }
             $('#gameContainer').fadeOut(800, () => {
               $('#initialScreen').fadeIn(800);
             });
@@ -9182,6 +9472,46 @@
             console.error('游戏启动失败:', error);
             toastr.error('游戏启动失败，请重试');
             $('#startBtn').prop('disabled', false).text('🚀 开始游戏');
+          }
+        }
+
+        // 请求全屏（手机端专用）
+        requestFullscreen() {
+          try {
+            if (!document.fullscreenElement) {
+              // 进入全屏
+              if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+              } else if (document.documentElement.webkitRequestFullscreen) {
+                document.documentElement.webkitRequestFullscreen();
+              } else if (document.documentElement.mozRequestFullScreen) {
+                document.documentElement.mozRequestFullScreen();
+              } else if (document.documentElement.msRequestFullscreen) {
+                document.documentElement.msRequestFullscreen();
+              }
+            }
+          } catch (error) {
+            console.log('全屏请求失败（可能用户已拒绝）:', error);
+          }
+        }
+
+        // 退出全屏
+        exitFullscreen() {
+          try {
+            if (document.fullscreenElement) {
+              // 退出全屏
+              if (document.exitFullscreen) {
+                document.exitFullscreen();
+              } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+              } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+              } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+              }
+            }
+          } catch (error) {
+            console.log('退出全屏失败:', error);
           }
         }
 
@@ -11083,13 +11413,18 @@
                 'max-height': 'calc(100vh - 40px)',
               });
               quickPresetContent.css({
-                'max-height': 'calc(100vh - 350px)',
+                'max-height': 'calc(100vh - 150px)',
               });
             }
           }, 100);
         }
 
         showQuickPresetMenu() {
+          // 手机端自动全屏
+          if (this.deviceDetector.isMobile) {
+            this.requestFullscreen();
+          }
+
           // 隐藏初始界面，显示快速预选界面
           $('#initialScreen').fadeOut(400, () => {
             $('#quickPresetScreen').fadeIn(400, () => {
@@ -11150,9 +11485,13 @@
             });
 
           // 重新绑定卡片点击事件 - 点击浮现文字，再次点击开始
-          $('.preset-card').on('click', e => {
+          // 先移除所有已存在的事件绑定，避免重复绑定
+          $('.preset-card').off('click touchstart touchend touchcancel');
+
+          // 处理卡片点击/触摸的统一函数
+          const handlePresetCardClick = (e, card) => {
+            e.preventDefault();
             e.stopPropagation();
-            const card = $(e.currentTarget);
 
             if (card.hasClass('expanded')) {
               // 如果已展开，再次点击应用预设并开始
@@ -11168,7 +11507,75 @@
               $('.preset-card').removeClass('expanded');
               card.addClass('expanded');
             }
+          };
+
+          // 方法1: 绑定click事件（适用于所有设备，包括移动端）
+          $(document).on('click', '.preset-card', e => {
+            // 🔥 移动端也允许click事件触发，作为备用
+            handlePresetCardClick(e, $(e.currentTarget));
           });
+
+          // 方法2: 如果支持触摸，添加触摸事件优化（防止误触和跳动）
+          if (this.deviceDetector.touchSupported) {
+            let touchStarted = false;
+            let touchStartTime = 0;
+            let touchStartPos = { x: 0, y: 0 };
+            let touchTarget = null;
+
+            $(document).on('touchstart', '.preset-card', e => {
+              touchStarted = true;
+              touchStartTime = Date.now();
+              touchTarget = $(e.currentTarget);
+              const touch = e.originalEvent.touches[0];
+              if (touch) {
+                touchStartPos = { x: touch.clientX, y: touch.clientY };
+              }
+              // 添加触摸反馈
+              touchTarget.addClass('touching');
+            });
+
+            $(document).on('touchend', '.preset-card', e => {
+              if (!touchStarted || !touchTarget) return;
+
+              const touchEndTime = Date.now();
+              const touchDuration = touchEndTime - touchStartTime;
+              let moveDistance = 0;
+
+              const touch = e.originalEvent.changedTouches[0];
+              if (touch) {
+                const touchEndPos = { x: touch.clientX, y: touch.clientY };
+                moveDistance = Math.sqrt(
+                  Math.pow(touchEndPos.x - touchStartPos.x, 2) + Math.pow(touchEndPos.y - touchStartPos.y, 2),
+                );
+              }
+
+              // 移除触摸反馈
+              touchTarget.removeClass('touching');
+
+              // 🔥 放宽触摸判断条件：移动距离小于30px且持续时间小于1秒，认为是有效点击
+              if (touchDuration < 1000 && moveDistance < 30) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // 确保不会触发输入框焦点
+                if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+                  document.activeElement.blur();
+                }
+
+                // 立即执行，减少延迟
+                handlePresetCardClick(e, touchTarget);
+              }
+
+              touchStarted = false;
+              touchTarget = null;
+            });
+
+            $(document).on('touchcancel', '.preset-card', e => {
+              $(e.currentTarget).removeClass('touching');
+              touchStarted = false;
+              touchTarget = null;
+            });
+          }
         }
 
         // 生成预设卡片HTML - 竖版杂志封面风格，标题和标签独立定位
@@ -12907,6 +13314,14 @@ ${selectedBackground.negative}
         const backToInitialBtn = document.getElementById('backToInitialBtn');
         if (backToInitialBtn) {
           backToInitialBtn.addEventListener('click', () => {
+            // 手机端退出全屏
+            if (
+              window.openingSelector &&
+              window.openingSelector.deviceDetector &&
+              window.openingSelector.deviceDetector.isMobile
+            ) {
+              window.openingSelector.exitFullscreen();
+            }
             $('#envCheckScreen').hide();
             $('#initialScreen').show();
           });
