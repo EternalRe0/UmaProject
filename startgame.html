@@ -3613,6 +3613,7 @@
         aspect-ratio: auto;
         height: auto;
         max-height: 600px;
+        align-self: start; /* 🔥 防止展开时其他卡片移动 */
       }
 
       /* 🔥 图片完整显示，始终不透明 */
@@ -3863,6 +3864,7 @@
         .preset-controls {
           margin-bottom: 15px;
           gap: 10px;
+          display: none !important; /* 🔥 手机端隐藏搜索栏 */
         }
 
         .preset-search-box {
@@ -3870,6 +3872,7 @@
           width: 100%;
           padding: 12px 15px;
           font-size: 14px;
+          display: none !important; /* 🔥 手机端隐藏搜索栏 */
         }
 
         /* 分类标签优化 */
@@ -3949,6 +3952,7 @@
         .preset-card.expanded {
           min-height: auto;
           max-height: 80vh;
+          align-self: start; /* 🔥 防止展开时其他卡片移动 */
         }
 
         .preset-card.expanded .preset-card-body {
@@ -11469,6 +11473,10 @@
           // 先移除所有已存在的事件绑定，避免重复绑定
           $('.preset-card').off('click touchstart touchend touchcancel');
 
+          // 🔥 用于防止触摸事件和点击事件重复触发的标志
+          let touchHandled = false;
+          let touchHandledTimeout = null;
+
           // 处理卡片点击/触摸的统一函数
           const handlePresetCardClick = (e, card) => {
             e.preventDefault();
@@ -11492,46 +11500,57 @@
 
           // 方法1: 绑定click事件（适用于所有设备，包括移动端）
           $(document).on('click', '.preset-card', e => {
-            // 🔥 移动端也允许click事件触发，作为备用
+            // 🔥 如果是触摸设备且触摸事件已处理，则忽略click事件
+            if (this.deviceDetector.touchSupported && touchHandled) {
+              touchHandled = false;
+              return;
+            }
             handlePresetCardClick(e, $(e.currentTarget));
           });
 
           // 方法2: 如果支持触摸，添加触摸事件优化（防止误触和跳动）
           if (this.deviceDetector.touchSupported) {
-            let touchStarted = false;
-            let touchStartTime = 0;
-            let touchStartPos = { x: 0, y: 0 };
-            let touchTarget = null;
+            // 🔥 使用 Map 来存储每个卡片的触摸状态，避免全局变量冲突
+            const touchStates = new Map();
 
             $(document).on('touchstart', '.preset-card', e => {
-              touchStarted = true;
-              touchStartTime = Date.now();
-              touchTarget = $(e.currentTarget);
+              const card = $(e.currentTarget);
+              const cardId = card.data('index');
               const touch = e.originalEvent.touches[0];
+              
               if (touch) {
-                touchStartPos = { x: touch.clientX, y: touch.clientY };
+                touchStates.set(cardId, {
+                  startTime: Date.now(),
+                  startPos: { x: touch.clientX, y: touch.clientY },
+                  card: card
+                });
+                // 添加触摸反馈
+                card.addClass('touching');
               }
-              // 添加触摸反馈
-              touchTarget.addClass('touching');
             });
 
             $(document).on('touchend', '.preset-card', e => {
-              if (!touchStarted || !touchTarget) return;
+              const card = $(e.currentTarget);
+              const cardId = card.data('index');
+              const touchState = touchStates.get(cardId);
+              
+              if (!touchState) return;
 
               const touchEndTime = Date.now();
-              const touchDuration = touchEndTime - touchStartTime;
+              const touchDuration = touchEndTime - touchState.startTime;
               let moveDistance = 0;
 
               const touch = e.originalEvent.changedTouches[0];
               if (touch) {
                 const touchEndPos = { x: touch.clientX, y: touch.clientY };
                 moveDistance = Math.sqrt(
-                  Math.pow(touchEndPos.x - touchStartPos.x, 2) + Math.pow(touchEndPos.y - touchStartPos.y, 2),
+                  Math.pow(touchEndPos.x - touchState.startPos.x, 2) + 
+                  Math.pow(touchEndPos.y - touchState.startPos.y, 2)
                 );
               }
 
               // 移除触摸反馈
-              touchTarget.removeClass('touching');
+              card.removeClass('touching');
 
               // 🔥 放宽触摸判断条件：移动距离小于30px且持续时间小于1秒，认为是有效点击
               if (touchDuration < 1000 && moveDistance < 30) {
@@ -11543,18 +11562,30 @@
                   document.activeElement.blur();
                 }
 
-                // 立即执行，减少延迟
-                handlePresetCardClick(e, touchTarget);
+                // 🔥 标记触摸事件已处理，防止click事件重复触发
+                touchHandled = true;
+                // 清除之前的定时器
+                if (touchHandledTimeout) {
+                  clearTimeout(touchHandledTimeout);
+                }
+                // 400ms后重置标志（移动端click事件延迟约300ms）
+                touchHandledTimeout = setTimeout(() => {
+                  touchHandled = false;
+                }, 400);
+
+                // 🔥 使用 touchState.card 确保使用正确的卡片元素
+                handlePresetCardClick(e, touchState.card);
               }
 
-              touchStarted = false;
-              touchTarget = null;
+              // 清除触摸状态
+              touchStates.delete(cardId);
             });
 
             $(document).on('touchcancel', '.preset-card', e => {
-              $(e.currentTarget).removeClass('touching');
-              touchStarted = false;
-              touchTarget = null;
+              const card = $(e.currentTarget);
+              const cardId = card.data('index');
+              card.removeClass('touching');
+              touchStates.delete(cardId);
             });
           }
         }
@@ -13947,5 +13978,4 @@ ${selectedBackground.negative}
     </script>
   </body>
 </html>
-
 
