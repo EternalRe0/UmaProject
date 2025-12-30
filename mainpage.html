@@ -7869,10 +7869,14 @@
         // 加载保存的头像
         loadProfileAvatar() {
           const savedAvatar = localStorage.getItem('teresen_profile_avatar');
-          if (savedAvatar) {
-            const avatarImg = document.getElementById('profile-avatar');
-            if (avatarImg) {
+          const avatarImg = document.getElementById('profile-avatar');
+          if (avatarImg) {
+            if (savedAvatar) {
               avatarImg.src = savedAvatar;
+            } else {
+              // 默认头像：里见皇冠 116.gif
+              avatarImg.src = 'https://i.ibb.co/0VzNGcfs/116.gif';
+              localStorage.setItem('teresen_profile_avatar', 'https://i.ibb.co/0VzNGcfs/116.gif');
             }
           }
         }
@@ -8010,8 +8014,8 @@
 
           const avatarImg = document.getElementById('profile-avatar');
           const currentAvatar = avatarImg
-            ? localStorage.getItem('teresen_profile_avatar') || avatarImg.src || 'https://i.ibb.co/vvM5jHJX/image.png'
-            : 'https://i.ibb.co/vvM5jHJX/image.png';
+            ? localStorage.getItem('teresen_profile_avatar') || avatarImg.src || 'https://i.ibb.co/0VzNGcfs/116.gif'
+            : 'https://i.ibb.co/0VzNGcfs/116.gif';
 
           modal.innerHTML = `
             <div class="rules-modal-content" style="
@@ -22687,7 +22691,7 @@
                     <div style="flex-shrink: 0">
                       <img
                         id="profile-avatar"
-                        src="https://files.catbox.moe/u9szcj.gif"
+                        src="https://i.ibb.co/0VzNGcfs/116.gif"
                         alt="头像"
                         style="
                           width: 80px;
