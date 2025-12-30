@@ -5461,66 +5461,43 @@
 
             if (isMobile) {
               // 🔥 移动端：创建横向滑动容器（长画布布局）
+              // 不复制内容，直接使用原有panels，保持原有尺寸，不自动扩展
               contentWrapper.className = 'game-viewport';
               contentWrapper.style.cssText = `
-                width: 300vw;
+                width: 100%;
                 height: 100%;
                 display: flex;
+                justify-content: flex-start;
+                align-items: flex-start;
                 overflow-x: auto;
-                overflow-y: hidden;
-                scroll-snap-type: x mandatory;
+                overflow-y: auto;
+                scroll-snap-type: none;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: thin;
                 scrollbar-color: rgba(139, 105, 20, 0.5) transparent;
-              `;
-
-              // 为移动端创建5个面板（5类设施）
-              // 将原有的panels复制到第一个面板
-              const panel1 = document.createElement('div');
-              panel1.className = 'game-panel';
-              panel1.style.cssText = `
-                width: 100vw;
-                height: 100vh;
-                scroll-snap-align: start;
-                flex-shrink: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                overflow-y: auto;
-                overflow-x: hidden;
-                padding: 10px;
+                padding: 20px;
                 box-sizing: border-box;
               `;
 
-              // 复制panels到第一个面板
-              const panelsClone = panels.cloneNode(true);
-              panel1.appendChild(panelsClone);
-              contentWrapper.appendChild(panel1);
-
-              // 创建其他4个面板（可以根据需要添加内容）
-              for (let i = 2; i <= 5; i++) {
-                const panel = document.createElement('div');
-                panel.className = 'game-panel';
-                panel.style.cssText = `
-                  width: 100vw;
-                  height: 100vh;
-                  scroll-snap-align: start;
-                  flex-shrink: 0;
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                  overflow-y: auto;
-                  overflow-x: hidden;
-                  padding: 10px;
-                  box-sizing: border-box;
-                  background: rgba(0, 0, 0, 0.1);
-                `;
-                panel.innerHTML = `<div style="text-align: center; color: #8b4513; font-size: 18px;">面板 ${i}</div>`;
-                contentWrapper.appendChild(panel);
+              // 🔥 保持panels原有尺寸，不强制扩展，不拉伸
+              // 恢复原始样式（如果有保存的话）
+              if (panels.dataset.originalStyle) {
+                const originalStyle = JSON.parse(panels.dataset.originalStyle);
+                panels.style.width = originalStyle.width || '';
+                panels.style.height = originalStyle.height || '';
+                panels.style.maxWidth = originalStyle.maxWidth || '';
+                panels.style.maxHeight = originalStyle.maxHeight || '';
               }
 
-              // 隐藏原始panels（因为已经复制到第一个面板了）
-              panels.style.display = 'none';
+              panels.style.position = 'relative';
+              panels.style.margin = '0 auto';
+              panels.style.transformOrigin = 'center center';
+              panels.style.flexShrink = '0'; // 防止被压缩
+              panels.style.flexGrow = '0'; // 防止自动扩展
+              panels.style.alignSelf = 'flex-start'; // 顶部对齐，不拉伸
+
+              // 直接将panels放入滑动容器
+              contentWrapper.appendChild(panels);
             } else {
               // 电脑端：保持原有布局
               contentWrapper.style.cssText = `
