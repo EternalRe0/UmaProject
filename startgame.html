@@ -3937,10 +3937,13 @@
           font-size: 9px;
         }
 
-        /* 卡片描述优化 */
+        /* 卡片描述优化 - 手机端直接显示文字提示 */
         .preset-card-body {
           padding: 15px;
           max-height: 60%;
+          opacity: 1 !important; /* 🔥 手机端直接显示 */
+          transform: translateY(0) !important; /* 🔥 手机端直接显示 */
+          pointer-events: auto !important; /* 🔥 手机端直接显示 */
         }
 
         .preset-card-description {
@@ -3948,7 +3951,7 @@
           line-height: 1.6;
         }
 
-        /* 展开状态优化 */
+        /* 展开状态优化 - 手机端不需要展开逻辑 */
         .preset-card.expanded {
           min-height: auto;
           max-height: 80vh;
@@ -4140,7 +4143,7 @@
         <div class="author-info">
           <p style="margin-bottom: 12px; line-height: 1.8">
             <strong style="color: #dc143c; font-size: 1.1em">我是Eternal zz</strong
-            >,4.5版本更新，祝福大家元旦快乐，新年快乐 🎊🏮
+            >，4.5版本更新，祝福大家元旦快乐，新年快乐 🎊🏮
           </p>
           <p style="margin-bottom: 12px; line-height: 1.8">
             本卡是围绕特雷普学院构建的<strong>赛马娘世界观</strong>，正在向<strong>赛马娘大世界</strong>进化
@@ -11469,36 +11472,28 @@
               this.renderPresetCards(this.currentPresets, this.currentCategory, searchTerm);
             });
 
-          // 重新绑定卡片点击事件 - 点击浮现文字，再次点击开始
+          // 🔥 重新绑定卡片点击事件 - 手机端直接进入，桌面端也改为直接进入（简化逻辑）
           // 先移除所有已存在的事件绑定，避免重复绑定
           $('.preset-card').off('click touchstart touchend touchcancel');
 
-          // 🔥 用于防止触摸事件和点击事件重复触发的标志
-          let touchHandled = false;
-          let touchHandledTimeout = null;
-
-          // 处理卡片点击/触摸的统一函数
+          // 处理卡片点击/触摸的统一函数 - 直接应用预设
           const handlePresetCardClick = (e, card) => {
             e.preventDefault();
             e.stopPropagation();
 
-            if (card.hasClass('expanded')) {
-              // 如果已展开，再次点击应用预设并开始
-              const index = card.data('index');
-              if (index !== undefined) {
-                this.applyQuickPreset(this.currentPresets[index]);
-                $('#quickPresetScreen').hide();
-                $('#gameContainer').show();
-                $('.preset-card').removeClass('expanded');
-              }
-            } else {
-              // 第一次点击：浮现剧情文字
-              $('.preset-card').removeClass('expanded');
-              card.addClass('expanded');
+            const index = card.data('index');
+            if (index !== undefined) {
+              this.applyQuickPreset(this.currentPresets[index]);
+              $('#quickPresetScreen').hide();
+              $('#gameContainer').show();
             }
           };
 
-          // 方法1: 绑定click事件（适用于所有设备，包括移动端）
+          // 🔥 用于防止触摸事件和click事件重复触发的标志（触摸设备专用）
+          let touchHandled = false;
+          let touchHandledTimeout = null;
+
+          // 方法1: 绑定click事件（适用于所有设备）
           $(document).on('click', '.preset-card', e => {
             // 🔥 如果是触摸设备且触摸事件已处理，则忽略click事件
             if (this.deviceDetector.touchSupported && touchHandled) {
@@ -11508,21 +11503,21 @@
             handlePresetCardClick(e, $(e.currentTarget));
           });
 
-          // 方法2: 如果支持触摸，添加触摸事件优化（防止误触和跳动）
+          // 方法2: 如果支持触摸，添加触摸事件优化（防止误触）
           if (this.deviceDetector.touchSupported) {
-            // 🔥 使用 Map 来存储每个卡片的触摸状态，避免全局变量冲突
+            // 🔥 使用 Map 来存储每个卡片的触摸状态
             const touchStates = new Map();
 
             $(document).on('touchstart', '.preset-card', e => {
               const card = $(e.currentTarget);
               const cardId = card.data('index');
               const touch = e.originalEvent.touches[0];
-              
+
               if (touch) {
                 touchStates.set(cardId, {
                   startTime: Date.now(),
                   startPos: { x: touch.clientX, y: touch.clientY },
-                  card: card
+                  card: card,
                 });
                 // 添加触摸反馈
                 card.addClass('touching');
@@ -11533,7 +11528,7 @@
               const card = $(e.currentTarget);
               const cardId = card.data('index');
               const touchState = touchStates.get(cardId);
-              
+
               if (!touchState) return;
 
               const touchEndTime = Date.now();
@@ -11544,15 +11539,15 @@
               if (touch) {
                 const touchEndPos = { x: touch.clientX, y: touch.clientY };
                 moveDistance = Math.sqrt(
-                  Math.pow(touchEndPos.x - touchState.startPos.x, 2) + 
-                  Math.pow(touchEndPos.y - touchState.startPos.y, 2)
+                  Math.pow(touchEndPos.x - touchState.startPos.x, 2) +
+                    Math.pow(touchEndPos.y - touchState.startPos.y, 2),
                 );
               }
 
               // 移除触摸反馈
               card.removeClass('touching');
 
-              // 🔥 放宽触摸判断条件：移动距离小于30px且持续时间小于1秒，认为是有效点击
+              // 🔥 移动距离小于30px且持续时间小于1秒，认为是有效点击
               if (touchDuration < 1000 && moveDistance < 30) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -11564,16 +11559,14 @@
 
                 // 🔥 标记触摸事件已处理，防止click事件重复触发
                 touchHandled = true;
-                // 清除之前的定时器
                 if (touchHandledTimeout) {
                   clearTimeout(touchHandledTimeout);
                 }
-                // 400ms后重置标志（移动端click事件延迟约300ms）
                 touchHandledTimeout = setTimeout(() => {
                   touchHandled = false;
                 }, 400);
 
-                // 🔥 使用 touchState.card 确保使用正确的卡片元素
+                // 直接应用预设
                 handlePresetCardClick(e, touchState.card);
               }
 
