@@ -1574,89 +1574,208 @@
 
         // 获取地点图片
         getLocationImage(locationName) {
-          if (!locationName) return null;
+          if (!locationName) return 'https://i.ibb.co/HLSMJ9d6/image.png';
 
-          const locationMap = {
-            // 学园内部地点
-            中央广场: 'https://files.catbox.moe/susi2t.avif',
-            广场: 'https://files.catbox.moe/susi2t.avif',
-            室外训练场: 'https://files.catbox.moe/bn7rhq.png',
-            室内训练场: 'https://files.catbox.moe/hjiq7q.avif',
-            训练场: 'https://files.catbox.moe/bn7rhq.png',
-            食堂: 'https://files.catbox.moe/2i7fpj.png',
-            活动楼: 'https://files.catbox.moe/z1xy41.avif',
-            舞蹈室: 'https://files.catbox.moe/z1xy41.avif',
-            游泳馆: 'https://files.catbox.moe/sykb2y.jpg',
-            室内游泳池: 'https://files.catbox.moe/sykb2y.jpg',
-            游泳池: 'https://files.catbox.moe/sykb2y.jpg',
-            教学楼: 'https://files.catbox.moe/z1xy41.avif',
-            主教学楼: 'https://files.catbox.moe/z1xy41.avif',
-            行政楼: 'https://files.catbox.moe/z1xy41.avif',
-            训练员室: 'https://files.catbox.moe/pggzuc.png',
-            训练员办公室: 'https://files.catbox.moe/pggzuc.png',
-            学生宿舍: 'https://files.catbox.moe/xnxgnw.png',
-            宿舍: 'https://files.catbox.moe/xnxgnw.png',
-            小树林: 'https://files.catbox.moe/b730w6.png',
-            网球场: 'https://files.catbox.moe/bn7rhq.png',
-            足球场: 'https://files.catbox.moe/bn7rhq.png',
-            体育馆: 'https://files.catbox.moe/hjiq7q.avif',
-            室内体育馆: 'https://files.catbox.moe/hjiq7q.avif',
-            扇形露天剧场: 'https://files.catbox.moe/8bovd6.png',
-            露天剧场: 'https://files.catbox.moe/8bovd6.png',
-            马娘宿舍: 'https://files.catbox.moe/xnxgnw.png',
+          // 默认地点图片
+          const defaultLocationImage = 'https://i.ibb.co/HLSMJ9d6/image.png';
 
-            // 学园外部/特殊地点
-            目白城: 'https://files.catbox.moe/bx68fl.png',
-            黄金家: 'https://files.catbox.moe/bx68fl.png',
-            车站: 'https://files.catbox.moe/eepwdx.png',
-            商业街: 'https://files.catbox.moe/7z60i6.png',
-            商店街: 'https://files.catbox.moe/7z60i6.png',
-            河堤: 'https://files.catbox.moe/b730w6.png',
-            河川: 'https://files.catbox.moe/b730w6.png',
+          // 学校内部地点图片映射
+          const school_internal = {
+            // 建筑与环境变体
+            building_winter: 'https://i.ibb.co/G3f19P0F/image.png', // 冬季校园
+            building_autumn: 'https://i.ibb.co/bggsc83g/image.png', // 秋天学院
+            building_sunset: 'https://i.ibb.co/jPcCXjCQ/image.png', // 黄昏校园
+            building_cloudy: 'https://i.ibb.co/TxfgPsPK/image.png', // 阴天学院
+            building_noon: 'https://i.ibb.co/TBxYs5mr/image.png', // 中午学院
+            building_christmas: 'https://i.ibb.co/YFk4j6DX/image.png', // 圣诞节时的学院
 
-            // 其他已有地点（保留）
-            道路: 'https://files.catbox.moe/jzok4r.avif',
-            演播室: 'https://files.catbox.moe/uko4mg.jpeg',
-            巴黎户外: 'https://files.catbox.moe/ctz0ky.png',
-            背景: 'https://files.catbox.moe/p3m82m.csv',
-            草场: 'https://files.catbox.moe/bn7rhq.png',
-            地铁: 'https://files.catbox.moe/7r8z6y.png',
-            地下室: 'https://files.catbox.moe/rgqln3.png',
-            观众席: 'https://files.catbox.moe/dodasg.png',
-            广州: 'https://files.catbox.moe/v9afs2.png',
-            海滩: 'https://files.catbox.moe/ynsuda.png',
-            海之家: 'https://files.catbox.moe/as90hx.png',
-            合宿: 'https://files.catbox.moe/vq3w89.png',
-            酒店: 'https://files.catbox.moe/yby88y.png',
-            情人酒店: 'https://files.catbox.moe/bnp1xz.png',
-            神社: 'https://files.catbox.moe/7g7u0q.png',
-            天台: 'https://files.catbox.moe/g3jmio.png',
-            温泉: 'https://files.catbox.moe/3y9jfi.png',
-            卧室: 'https://files.catbox.moe/xnxgnw.png',
-            香港: 'https://files.catbox.moe/13mztz.png',
-            校长室: 'https://files.catbox.moe/faizc9.png',
-            休息室: 'https://files.catbox.moe/sb7lp8.png',
-            学生会: 'https://files.catbox.moe/7rgkhf.png',
-            学校大门: 'https://files.catbox.moe/6t9elx.png',
-            医疗室: 'https://files.catbox.moe/ef5av6.png',
-            浴室: 'https://files.catbox.moe/xga80h.png',
-            中庭: 'https://files.catbox.moe/8bovd6.png',
-            训练员宿舍: 'https://files.catbox.moe/xnxgnw.png',
+            // 内部细节扩充
+            corridor_sunset: 'https://i.ibb.co/SDvv6p7j/image.png', // 黄昏学院走廊
+            corridor_activity: 'https://i.ibb.co/dwWSMTF9/image.png', // 教学楼活动走廊
+            corridor_back_sunset: 'https://i.ibb.co/xSYJg5YR/image.png', // 学校后面
+            office_building_in: 'https://i.ibb.co/hRtQ0k6C/image.png', // 办公楼内
+            office_building_front: 'https://i.ibb.co/DfQbT1TB/image.png', // 办公楼前
+            archive_room: 'https://i.ibb.co/5xt3CYJX/image.png', // 档案室
+            basement: 'https://i.ibb.co/jvszvTH1/image.png', // 地下室
           };
 
-          // 精确匹配
-          if (locationMap[locationName]) {
-            return locationMap[locationName];
+          // 训练与竞技场区图片映射
+          const training_area = {
+            // 操场变体
+            track_offseason: 'https://i.ibb.co/yFvhNt7G/image.png', // 休赛期操场
+            track_side: 'https://i.ibb.co/1GxvHfB2/image.png', // 操场栏杆旁
+            track_gate_prep: 'https://i.ibb.co/JjD65SQd/image.jpg', // 赛跑前入闸
+            track_dirt_road: 'https://i.ibb.co/G3fcjDF3/image.png', // 野外泥土路
+            field_grass: 'https://i.ibb.co/5WdZDrZK/image.png', // 草场
+            field_football: 'https://i.ibb.co/5gLTMPDp/image.png', // 篮球场
+
+            // 竞技场细节
+            arena_entrance: 'https://i.ibb.co/Zz1FK13k/image.png', // 赛程入票口
+            arena_hall: 'https://i.ibb.co/VYVYYXJR/image.png', // 比赛售票大厅
+            arena_stand_plaza: 'https://i.ibb.co/V0ZYM5YY/image.png', // 看台广场
+            arena_indoor_hall: 'https://i.ibb.co/Qvg3RfLv/image.png', // 室内比赛观看厅
+            arena_studio: 'https://i.ibb.co/23C23c9p/image.jpg', // 演播室
+          };
+
+          // 生活与社交区图片映射
+          const life_social = {
+            // 宿舍与生活细节
+            dorm_laundry: 'https://i.ibb.co/NgSh35Hg/image.png', // 洗衣房
+            dorm_kitchen: 'https://i.ibb.co/mVqRQD06/image.png', // 马娘厨房
+            dorm_afternoon_tea: 'https://i.ibb.co/VWjDsK86/image.png', // 下午茶桌
+            dorm_rest_room: 'https://i.ibb.co/39SNvPzK/image.png', // 日式休息室
+            dorm_luxury: 'https://i.ibb.co/MTwYVb3/image.png', // 豪华卧室
+
+            // 校园社交
+            plaza_night: 'https://i.ibb.co/nNSKqqGT/image.png', // 夜晚校园
+            plaza_mid: 'https://i.ibb.co/WWh3WgYN/image.png', // 中庭
+            plaza_stairs: 'https://i.ibb.co/Wqzrx5B/image.png', // 神社台阶
+            plaza_shrine: 'https://i.ibb.co/SXvChCgJ/image.png', // 神社
+            forest_autumn: 'https://i.ibb.co/k2WqY4mp/image.png', // 秋天森林
+            garden: 'https://i.ibb.co/gbq2YX8L/image.png', // 花园
+            sakura_tree: 'https://i.ibb.co/TqYNzKmx/image.png', // 樱花树
+          };
+
+          // 商业街与校外图片映射
+          const town_area = {
+            // 交通补全
+            transport_bus_in: 'https://i.ibb.co/rRy0JJrY/image.png', // 公交车内
+            transport_subway_out: 'https://i.ibb.co/tw8463Wy/image.png', // 地铁出口
+            transport_train_ext: 'https://i.ibb.co/KcFyG7bb/image.png', // 火车站
+            transport_highway: 'https://i.ibb.co/d4gDDjwF/image.gif', // 公路(动)
+
+            // 店铺与街道补全
+            store_fashion: 'https://i.ibb.co/tM6G7df7/image.png', // 服装店
+            store_snack: 'https://i.ibb.co/pr222fWK/image.png', // 高档点心店
+            store_market: 'https://i.ibb.co/d4Vqw2S0/image.png', // 超市
+            store_flower: 'https://i.ibb.co/6Rb1Xyf0/image.png', // 花店
+            restaurant_izakaya: 'https://i.ibb.co/7J9HHMjq/image.png', // 居酒屋
+            restaurant_bar_front: 'https://i.ibb.co/chWNyFj6/image.png', // 酒吧门前
+
+            // 娱乐
+            fun_museum: 'https://i.ibb.co/nsx5YXHN/image.png', // 博物馆
+            fun_circus: 'https://i.ibb.co/CK5rjwKy/image.png', // 马戏团
+            fun_festival: 'https://i.ibb.co/35nxgbk7/image.png', // 校园大感谢祭
+            fun_park: 'https://i.ibb.co/fdQ4V1kH/image.png', // 公园
+          };
+
+          // 远征与特殊地标图片映射
+          const special_location = {
+            // 海岛细节
+            island_camp: 'https://i.ibb.co/tpvT3qZc/image.png', // 海岛旅游营地
+            island_pier: 'https://i.ibb.co/3YGyJj5h/image.png', // 海岛码头
+            island_cave: 'https://i.ibb.co/wZKpQ9x6/image.png', // 海边拱洞
+            island_shop: 'https://i.ibb.co/Z6Wq58LZ/image.png', // 海之家
+            island_tent: 'https://i.ibb.co/fzztrTCV/image.png', // 帐篷内
+            island_pool_private: 'https://i.ibb.co/bMw1H3WD/image.png', // 私人泳池
+
+            // 晚宴与特殊事件
+            event_dinner_ball: 'https://i.ibb.co/XxWHSsbw/image.png', // 家族晚宴
+            event_dinner_hall: 'https://i.ibb.co/xtz8zy9P/1.png', // 晚宴1
+            event_speech: 'https://i.ibb.co/WWpdNkbt/image.png', // 演讲台
+            event_stage_concert: 'https://i.ibb.co/nsbJS6Lc/image.png', // 演唱会舞台
+
+            // 世界
+            world_guangzhou: 'https://i.ibb.co/yF5tsW5M/image.png', // 广州
+          };
+
+          // 合并所有图片映射
+          const allLocationImages = {
+            ...school_internal,
+            ...training_area,
+            ...life_social,
+            ...town_area,
+            ...special_location,
+          };
+
+          // 关键词匹配规则（按优先级排序）
+          const keywordRules = [
+            // 学校内部建筑
+            { keywords: ['中央广场', '广场'], image: school_internal['plaza_mid'] || defaultLocationImage },
+            {
+              keywords: ['教学楼', '主教学楼', '活动楼'],
+              image: school_internal['building_noon'] || defaultLocationImage,
+            },
+            {
+              keywords: ['行政楼', '办公楼', '训练员室', '训练员办公室'],
+              image: school_internal['office_building_in'] || defaultLocationImage,
+            },
+            { keywords: ['走廊'], image: school_internal['corridor_activity'] || defaultLocationImage },
+            { keywords: ['档案室'], image: school_internal['archive_room'] || defaultLocationImage },
+            { keywords: ['地下室'], image: school_internal['basement'] || defaultLocationImage },
+            { keywords: ['食堂'], image: life_social['dorm_kitchen'] || defaultLocationImage },
+            { keywords: ['舞蹈室'], image: school_internal['corridor_activity'] || defaultLocationImage },
+
+            // 训练场
+            {
+              keywords: ['室外训练场', '训练场', '操场'],
+              image: training_area['track_offseason'] || defaultLocationImage,
+            },
+            {
+              keywords: ['室内训练场', '体育馆', '室内体育馆'],
+              image: training_area['arena_indoor_hall'] || defaultLocationImage,
+            },
+            { keywords: ['网球场', '足球场', '草场'], image: training_area['field_grass'] || defaultLocationImage },
+            { keywords: ['演播室'], image: training_area['arena_studio'] || defaultLocationImage },
+            { keywords: ['观众席', '看台'], image: training_area['arena_stand_plaza'] || defaultLocationImage },
+            { keywords: ['扇形露天剧场', '露天剧场'], image: training_area['arena_entrance'] || defaultLocationImage },
+
+            // 生活区
+            {
+              keywords: ['学生宿舍', '宿舍', '马娘宿舍', '训练员宿舍', '卧室'],
+              image: life_social['dorm_luxury'] || defaultLocationImage,
+            },
+            { keywords: ['休息室'], image: life_social['dorm_rest_room'] || defaultLocationImage },
+            { keywords: ['中庭'], image: life_social['plaza_mid'] || defaultLocationImage },
+            { keywords: ['小树林', '森林'], image: life_social['forest_autumn'] || defaultLocationImage },
+            { keywords: ['神社'], image: life_social['plaza_shrine'] || defaultLocationImage },
+            { keywords: ['花园'], image: life_social['garden'] || defaultLocationImage },
+            { keywords: ['樱花'], image: life_social['sakura_tree'] || defaultLocationImage },
+            {
+              keywords: ['游泳馆', '室内游泳池', '游泳池'],
+              image: special_location['island_pool_private'] || defaultLocationImage,
+            },
+
+            // 校外与商业
+            { keywords: ['车站', '火车站'], image: town_area['transport_train_ext'] || defaultLocationImage },
+            { keywords: ['地铁'], image: town_area['transport_subway_out'] || defaultLocationImage },
+            { keywords: ['商业街', '商店街'], image: town_area['store_fashion'] || defaultLocationImage },
+            { keywords: ['道路', '公路'], image: town_area['transport_highway'] || defaultLocationImage },
+            { keywords: ['河堤', '河川'], image: life_social['plaza_stairs'] || defaultLocationImage },
+            { keywords: ['公园'], image: town_area['fun_park'] || defaultLocationImage },
+            { keywords: ['博物馆'], image: town_area['fun_museum'] || defaultLocationImage },
+
+            // 特殊地点
+            { keywords: ['海滩', '海之家'], image: special_location['island_shop'] || defaultLocationImage },
+            { keywords: ['合宿', '营地'], image: special_location['island_camp'] || defaultLocationImage },
+            { keywords: ['酒店', '情人酒店'], image: special_location['event_dinner_hall'] || defaultLocationImage },
+            { keywords: ['温泉'], image: special_location['island_pool_private'] || defaultLocationImage },
+            { keywords: ['广州'], image: special_location['world_guangzhou'] || defaultLocationImage },
+            { keywords: ['目白城', '黄金家'], image: special_location['event_dinner_ball'] || defaultLocationImage },
+            { keywords: ['凯旋门', '巴黎'], image: special_location['event_speech'] || defaultLocationImage },
+            { keywords: ['医院', '医疗室'], image: defaultLocationImage },
+            { keywords: ['校长室', '学生会'], image: school_internal['office_building_front'] || defaultLocationImage },
+            { keywords: ['学校大门'], image: school_internal['corridor_back_sunset'] || defaultLocationImage },
+            { keywords: ['浴室'], image: life_social['dorm_laundry'] || defaultLocationImage },
+            { keywords: ['天台'], image: school_internal['building_sunset'] || defaultLocationImage },
+          ];
+
+          // 精确匹配（先检查是否有直接匹配的key）
+          if (allLocationImages[locationName]) {
+            return allLocationImages[locationName];
           }
 
-          // 模糊匹配（包含关键词）
-          for (const key in locationMap) {
-            if (locationName.includes(key) || key.includes(locationName)) {
-              return locationMap[key];
+          // 关键词匹配
+          for (const rule of keywordRules) {
+            for (const keyword of rule.keywords) {
+              if (locationName.includes(keyword) || keyword.includes(locationName)) {
+                return rule.image;
+              }
             }
           }
 
-          return null;
+          // 如果都没匹配到，返回默认图片
+          return defaultLocationImage;
         }
 
         // 更新地点图片显示
@@ -7772,129 +7891,127 @@
           modal.style.display = 'flex';
 
           const avatarIcons = [
-            'https://files.catbox.moe/qflzxu.jpg',
-            'https://files.catbox.moe/0yc93h.png',
-            'https://files.catbox.moe/dqck58.png',
-            'https://files.catbox.moe/dz30g2.png',
-            'https://files.catbox.moe/j5ey17.png',
-            'https://files.catbox.moe/8guz7f.png',
-            'https://files.catbox.moe/a6j27z.png',
-            'https://files.catbox.moe/fwsr5i.png',
-            'https://files.catbox.moe/gto9os.png',
-            'https://files.catbox.moe/mmpm2o.png',
-            'https://files.catbox.moe/5o1sq8.png',
-            'https://files.catbox.moe/cwze03.png',
-            'https://files.catbox.moe/lb6i2m.png',
-            'https://files.catbox.moe/vaybf1.png',
-            'https://files.catbox.moe/6ji5t8.png',
-            'https://files.catbox.moe/2bdoqf.png',
-            'https://files.catbox.moe/0e87w5.png',
-            'https://files.catbox.moe/88bl5k.png',
-            'https://files.catbox.moe/q8iq99.png',
-            'https://files.catbox.moe/0kwkeu.png',
-            'https://files.catbox.moe/ohxr62.png',
-            'https://files.catbox.moe/qnjifq.png',
-            'https://files.catbox.moe/ti7a7e.png',
-            'https://files.catbox.moe/lt44fw.png',
-            'https://files.catbox.moe/ho8xuw.png',
-            'https://files.catbox.moe/uh8els.png',
-            'https://files.catbox.moe/sexais.png',
-            'https://files.catbox.moe/y1zi4p.png',
-            'https://files.catbox.moe/jnhnnm.png',
-            'https://files.catbox.moe/a8ldtj.png',
-            'https://files.catbox.moe/g88mff.png',
-            'https://files.catbox.moe/ws098v.png',
-            'https://files.catbox.moe/utoc62.png',
-            'https://files.catbox.moe/a6o2cp.png',
-            'https://files.catbox.moe/tw6yxw.png',
-            'https://files.catbox.moe/3fts2d.png',
-            'https://files.catbox.moe/oe13q9.png',
-            'https://files.catbox.moe/5su1k9.png',
-            'https://files.catbox.moe/bt39hi.png',
-            'https://files.catbox.moe/gvwlym.png',
-            'https://files.catbox.moe/0jx1t6.png',
-            'https://files.catbox.moe/ap6q6m.png',
-            'https://files.catbox.moe/92lv2o.png',
-            'https://files.catbox.moe/ug311x.png',
-            'https://files.catbox.moe/dv90ej.png',
-            'https://files.catbox.moe/27hpzv.png',
-            'https://files.catbox.moe/zr06x6.png',
-            'https://files.catbox.moe/qljj32.png',
-            'https://files.catbox.moe/fziqii.png',
-            'https://files.catbox.moe/crh2a4.png',
-            'https://files.catbox.moe/2bvb02.png',
-            'https://files.catbox.moe/ypgbw8.png',
-            'https://files.catbox.moe/7epz7w.png',
-            'https://files.catbox.moe/e0irum.png',
-            'https://files.catbox.moe/n9lgpv.png',
-            'https://files.catbox.moe/78myzx.png',
-            'https://files.catbox.moe/ywa39v.png',
-            'https://files.catbox.moe/6jtp5b.png',
-            'https://files.catbox.moe/jyy7wi.png',
-            'https://files.catbox.moe/inpm0l.png',
-            'https://files.catbox.moe/3368uv.png',
-            'https://files.catbox.moe/ick1y5.png',
-            'https://files.catbox.moe/qy58sb.png',
-            'https://files.catbox.moe/vtjt9y.jpg',
-            'https://files.catbox.moe/1ay7et.png',
-            'https://files.catbox.moe/rytn3t.png',
-            'https://files.catbox.moe/e78dpk.png',
-            'https://files.catbox.moe/uod4x0.png',
-            'https://files.catbox.moe/klo9wi.png',
-            'https://files.catbox.moe/kw4nhq.png',
-            'https://files.catbox.moe/7xxwak.png',
-            'https://files.catbox.moe/6you6o.png',
-            'https://files.catbox.moe/i89w2a.png',
-            'https://files.catbox.moe/cvaugj.png',
-            'https://files.catbox.moe/vdrsps.png',
-            'https://files.catbox.moe/60mzvm.gif',
-            'https://files.catbox.moe/u2ka32.gif',
-            'https://files.catbox.moe/6kw9ll.gif',
-            'https://files.catbox.moe/dyzslx.gif',
-            'https://files.catbox.moe/3xncjo.gif',
-            'https://files.catbox.moe/utmasr.gif',
-            'https://files.catbox.moe/1c8zo7.gif',
-            'https://files.catbox.moe/2e10cw.gif',
-            'https://files.catbox.moe/lxvoqi.gif',
-            'https://files.catbox.moe/8bsfya.gif',
-            'https://files.catbox.moe/dv1pz6.gif',
-            'https://files.catbox.moe/7tj3wk.gif',
-            'https://files.catbox.moe/8d77ys.gif',
-            'https://files.catbox.moe/oh6zw2.gif',
-            'https://files.catbox.moe/u0e986.gif',
-            'https://files.catbox.moe/3o3ct2.gif',
-            'https://files.catbox.moe/mb5hph.gif',
-            'https://files.catbox.moe/u63tde.gif',
-            'https://files.catbox.moe/wxivic.gif',
-            'https://files.catbox.moe/uwgh8o.gif',
-            'https://files.catbox.moe/q8lbcc.gif',
-            'https://files.catbox.moe/e7kqj7.gif',
-            'https://files.catbox.moe/8pnx62.gif',
-            'https://files.catbox.moe/dc4z95.gif',
-            'https://files.catbox.moe/xhvxq8.png',
-            'https://files.catbox.moe/b274n3.png',
-            'https://files.catbox.moe/tl4ovt.gif',
-            'https://files.catbox.moe/h0sg39.gif',
-            'https://files.catbox.moe/mugsxv.gif',
-            'https://files.catbox.moe/gj5ft1.gif',
-            'https://files.catbox.moe/4ss182.gif',
-            'https://files.catbox.moe/4nicqk.gif',
-            'https://files.catbox.moe/sbbpci.gif',
-            'https://files.catbox.moe/4whwro.gif',
-            'https://files.catbox.moe/v0bwfa.gif',
-            'https://files.catbox.moe/rg2u7e.gif',
-            'https://files.catbox.moe/gyihwy.gif',
-            'https://files.catbox.moe/wxeof4.gif',
-            'https://files.catbox.moe/n6aoa9.gif',
-            'https://files.catbox.moe/y72gh5.gif',
-            'https://files.catbox.moe/u9szcj.gif',
-            'https://files.catbox.moe/90rvne.gif',
+            'https://i.ibb.co/MyDhdy9p/117.gif',
+            'https://i.ibb.co/0VzNGcfs/116.gif',
+            'https://i.ibb.co/4Zc012Ky/115.gif',
+            'https://i.ibb.co/6JgDbTFf/114.gif',
+            'https://i.ibb.co/M3H5Qkv/112.gif',
+            'https://i.ibb.co/GQpSM0V2/111.gif',
+            'https://i.ibb.co/qLnLxgtd/110.gif',
+            'https://i.ibb.co/Ndxt9GLW/109.gif',
+            'https://i.ibb.co/zTnj7rc5/108.gif',
+            'https://i.ibb.co/gbbSkX6r/107.gif',
+            'https://i.ibb.co/S7McVksQ/105.gif',
+            'https://i.ibb.co/spqVTM4p/104.gif',
+            'https://i.ibb.co/xq6SYWR3/103.gif',
+            'https://i.ibb.co/216dQLz1/102.gif',
+            'https://i.ibb.co/MkRMKY1L/101.png',
+            'https://i.ibb.co/CpdK60fz/100.png',
+            'https://i.ibb.co/Y4NqXtkb/99.gif',
+            'https://i.ibb.co/qMLCbGLH/98.gif',
+            'https://i.ibb.co/sJ3Z0HMS/97.gif',
+            'https://i.ibb.co/DDg778RC/96.gif',
+            'https://i.ibb.co/8Drbgt9G/95.gif',
+            'https://i.ibb.co/tM3kwyFy/94.gif',
+            'https://i.ibb.co/XxywhDwC/93.gif',
+            'https://i.ibb.co/fdrXcQSy/92.gif',
+            'https://i.ibb.co/d44fqZKp/91.gif',
+            'https://i.ibb.co/whVJD4YX/90.gif',
+            'https://i.ibb.co/qbFsGr1/89.gif',
+            'https://i.ibb.co/7tmgJfG6/88.gif',
+            'https://i.ibb.co/ZzcDgPPb/87.gif',
+            'https://i.ibb.co/8L3GVTV9/86.gif',
+            'https://i.ibb.co/1JvsPL1R/85.gif',
+            'https://i.ibb.co/HTWTRKpF/84.gif',
+            'https://i.ibb.co/9HtCCTY2/83.gif',
+            'https://i.ibb.co/tMdg1T6w/82.gif',
+            'https://i.ibb.co/5hN95Bqv/81.gif',
+            'https://i.ibb.co/Qjb64H64/80.gif',
+            'https://i.ibb.co/Nh2GRds/79.gif',
+            'https://i.ibb.co/bjspDw6m/78.gif',
+            'https://i.ibb.co/9HfLCRSC/77.gif',
+            'https://i.ibb.co/gphxHCg/76.gif',
+            'https://i.ibb.co/qY2xnKr8/75.png',
+            'https://i.ibb.co/gMbfw31M/74.png',
+            'https://i.ibb.co/fV6KZzW1/73.png',
+            'https://i.ibb.co/hx6ybYb1/72.png',
+            'https://i.ibb.co/0ySpFbqk/71.png',
+            'https://i.ibb.co/7x8Z012R/70.png',
+            'https://i.ibb.co/4Zrc3wYd/69.png',
+            'https://i.ibb.co/d0cCP8hm/68.png',
+            'https://i.ibb.co/vg2GWNF/67.png',
+            'https://i.ibb.co/D0kRstQ/66.png',
+            'https://i.ibb.co/bMQSpQ8J/65.png',
+            'https://i.ibb.co/C38QsTSd/64.jpg',
+            'https://i.ibb.co/V0Rwg8SZ/63.png',
+            'https://i.ibb.co/S4SLdwPn/62.png',
+            'https://i.ibb.co/SDx7NRwm/61.png',
+            'https://i.ibb.co/S4KhX8CJ/60.png',
+            'https://i.ibb.co/prnzCdHz/59.png',
+            'https://i.ibb.co/7JZQ5prg/58.png',
+            'https://i.ibb.co/TDkKhmzQ/57.png',
+            'https://i.ibb.co/fYk5MZFh/56.png',
+            'https://i.ibb.co/ksvdqCkF/55.png',
+            'https://i.ibb.co/n84b3ffK/54.png',
+            'https://i.ibb.co/C4kbzPZ/53.png',
+            'https://i.ibb.co/39XsKJj9/52.png',
+            'https://i.ibb.co/d45P2KV1/51.png',
+            'https://i.ibb.co/chYdSpCJ/50.png',
+            'https://i.ibb.co/FbZNZwFT/49.png',
+            'https://i.ibb.co/SwDBmhZ4/48.png',
+            'https://i.ibb.co/v4mQyNwh/47.png',
+            'https://i.ibb.co/3mZJLMCm/46.png',
+            'https://i.ibb.co/cS0j0H80/45.png',
+            'https://i.ibb.co/pv7Xt59p/44.png',
+            'https://i.ibb.co/938Nhjsb/43.png',
+            'https://i.ibb.co/Qv2NgmQB/42.png',
+            'https://i.ibb.co/k2Ym0b0J/41.png',
+            'https://i.ibb.co/9HP1wRSY/40.png',
+            'https://i.ibb.co/VYtKbgMm/39.png',
+            'https://i.ibb.co/0pzfJNGC/38.png',
+            'https://i.ibb.co/9H9Z6pLP/37.png',
+            'https://i.ibb.co/pjSF1YXp/36.png',
+            'https://i.ibb.co/s9v22tXb/35.png',
+            'https://i.ibb.co/rKPszvrq/34.png',
+            'https://i.ibb.co/qGGR8Hf/33.png',
+            'https://i.ibb.co/M08FLv3/32.png',
+            'https://i.ibb.co/rfdJN1XH/31.png',
+            'https://i.ibb.co/fYt6gcbN/30.png',
+            'https://i.ibb.co/JRvsWH6k/29.png',
+            'https://i.ibb.co/XrXZgQhz/28.png',
+            'https://i.ibb.co/RTkhvgM1/27.png',
+            'https://i.ibb.co/8LjV2b2S/26.png',
+            'https://i.ibb.co/Fk238vRf/25.png',
+            'https://i.ibb.co/rKKR5hsF/24.png',
+            'https://i.ibb.co/9kgxsKQm/23.png',
+            'https://i.ibb.co/MkxLXxnV/22.png',
+            'https://i.ibb.co/5g04Jz2R/21.png',
+            'https://i.ibb.co/MyctrsYt/20.png',
+            'https://i.ibb.co/svw4FzXt/19.png',
+            'https://i.ibb.co/HD9V68R6/18.png',
+            'https://i.ibb.co/Q3mknYLx/17.png',
+            'https://i.ibb.co/0RRBCmVM/16.png',
+            'https://i.ibb.co/gFmszgrf/15.png',
+            'https://i.ibb.co/WW9Dyk6S/14.png',
+            'https://i.ibb.co/svXZ2rHd/13.png',
+            'https://i.ibb.co/21GdZ3wz/12.png',
+            'https://i.ibb.co/WNpm09fR/11.png',
+            'https://i.ibb.co/zTjtw2nf/10.png',
+            'https://i.ibb.co/5gKVSwHV/9.png',
+            'https://i.ibb.co/whqMPcc8/8.png',
+            'https://i.ibb.co/RpRpbjQp/7.png',
+            'https://i.ibb.co/HTj9n8S6/6.png',
+            'https://i.ibb.co/Sjvb0wx/5.png',
+            'https://i.ibb.co/Kz3KSfz8/4.png',
+            'https://i.ibb.co/S4qfvH4C/3.png',
+            'https://i.ibb.co/HDHYW6Pr/2.png',
+            'https://i.ibb.co/HLJGzVQt/1.jpg',
           ];
 
           const avatarImg = document.getElementById('profile-avatar');
           const currentAvatar = avatarImg
-            ? localStorage.getItem('teresen_profile_avatar') || avatarImg.src || 'https://files.catbox.moe/u9szcj.gif'
-            : 'https://files.catbox.moe/u9szcj.gif';
+            ? localStorage.getItem('teresen_profile_avatar') || avatarImg.src || 'https://i.ibb.co/vvM5jHJX/image.png'
+            : 'https://i.ibb.co/vvM5jHJX/image.png';
 
           modal.innerHTML = `
             <div class="rules-modal-content" style="
@@ -25646,7 +25763,7 @@
             >
               <img
                 id="world-map-image"
-                src="https://files.catbox.moe/l35lb5.png"
+                src="https://i.ibb.co/B2hJkB5J/image.png"
                 alt="特雷森世界地图"
                 style="width: 100%; height: auto; display: block"
               />
@@ -25747,7 +25864,7 @@
         >
           <img
             id="quick-map-image"
-            src="https://files.catbox.moe/psluhm.jpg"
+            src="https://i.ibb.co/DDNP3GzH/image.png"
             alt="特雷森学院地图"
             style="width: 150%; height: auto; display: block; user-select: none; pointer-events: none"
           />
@@ -31523,7 +31640,7 @@
             mapInfo: {
               id: 'treisen_world_map',
               name: '特雷森世界地图',
-              imageUrl: 'https://files.catbox.moe/l35lb5.png',
+              imageUrl: 'https://i.ibb.co/B2hJkB5J/image.png',
               originalWidth: 710,
               originalHeight: 480,
             },
