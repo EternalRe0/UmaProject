@@ -5344,12 +5344,6 @@
               overlay.style.backgroundImage = 'none';
             }
 
-            // 🔥 检测是否为移动端（提前定义，供后续使用）
-            const isMobile =
-              window.mobileDetector?.isMobile ||
-              /mobile|android|iphone|ipad|ipod/i.test(navigator.userAgent) ||
-              window.innerWidth <= 768;
-
             // 🔥 初始化缩放按钮事件（使用右侧面板的按钮，不使用悬浮窗）
             const zoomOutBtn = document.getElementById('zoom-out-btn-inline');
             const zoomResetBtn = document.getElementById('zoom-reset-btn-inline');
@@ -5364,11 +5358,6 @@
 
             // 应用缩放的函数
             const applyZoom = scale => {
-              // 🔥 移动端不需要缩放功能（使用横向滑动）
-              if (isMobile) {
-                return;
-              }
-
               // 限制缩放范围
               scale = Math.max(minScale, Math.min(maxScale, scale));
               currentScale = scale;
@@ -5389,8 +5378,7 @@
             };
 
             // 绑定按钮事件（只在全屏时生效，使用右侧面板的按钮）
-            // 🔥 移动端不显示缩放按钮（使用横向滑动）
-            if (zoomOutBtn && zoomResetBtn && zoomInBtn && !isMobile) {
+            if (zoomOutBtn && zoomResetBtn && zoomInBtn) {
               // 绑定事件监听器
               zoomOutBtn.onclick = () => {
                 applyZoom(currentScale - stepScale);
@@ -5458,69 +5446,25 @@
 
             // 创建内容容器（限制尺寸，不直接扩展）
             const contentWrapper = document.createElement('div');
+            contentWrapper.style.cssText = `
+              width: 100%;
+              height: 100%;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              overflow: auto;
+              padding: 20px;
+              box-sizing: border-box;
+            `;
 
-            if (isMobile) {
-              // 🔥 移动端：创建横向滑动容器（长画布布局）
-              // 不复制内容，直接使用原有panels，保持原有尺寸，不自动扩展
-              contentWrapper.className = 'game-viewport';
-              contentWrapper.style.cssText = `
-                width: 100%;
-                height: 100%;
-                display: flex;
-                justify-content: flex-start;
-                align-items: flex-start;
-                overflow-x: auto;
-                overflow-y: auto;
-                scroll-snap-type: none;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: thin;
-                scrollbar-color: rgba(139, 105, 20, 0.5) transparent;
-                padding: 20px;
-                box-sizing: border-box;
-              `;
-
-              // 🔥 保持panels原有尺寸，不强制扩展，不拉伸
-              // 恢复原始样式（如果有保存的话）
-              if (panels.dataset.originalStyle) {
-                const originalStyle = JSON.parse(panels.dataset.originalStyle);
-                panels.style.width = originalStyle.width || '';
-                panels.style.height = originalStyle.height || '';
-                panels.style.maxWidth = originalStyle.maxWidth || '';
-                panels.style.maxHeight = originalStyle.maxHeight || '';
-              }
-
-              panels.style.position = 'relative';
-              panels.style.margin = '0 auto';
-              panels.style.transformOrigin = 'center center';
-              panels.style.flexShrink = '0'; // 防止被压缩
-              panels.style.flexGrow = '0'; // 防止自动扩展
-              panels.style.alignSelf = 'flex-start'; // 顶部对齐，不拉伸
-
-              // 直接将panels放入滑动容器
-              contentWrapper.appendChild(panels);
-            } else {
-              // 电脑端：保持原有布局
-              contentWrapper.style.cssText = `
-                width: 100%;
-                height: 100%;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                overflow: auto;
-                padding: 20px;
-                box-sizing: border-box;
-              `;
-
-              // 应用初始缩放（限制尺寸，不直接扩展）- 默认100%缩放已经在applyZoom中应用了
-              panels.style.position = 'relative';
-              panels.style.margin = 'auto';
-              panels.style.transformOrigin = 'center center';
-              panels.style.flexShrink = '0'; // 🔥 防止被压缩
-
-              contentWrapper.appendChild(panels);
-            }
+            // 应用初始缩放（限制尺寸，不直接扩展）- 默认100%缩放已经在applyZoom中应用了
+            panels.style.position = 'relative';
+            panels.style.margin = 'auto';
+            panels.style.transformOrigin = 'center center';
+            panels.style.flexShrink = '0'; // 🔥 防止被压缩
 
             // 组装覆盖层
+            contentWrapper.appendChild(panels);
             overlay.appendChild(contentWrapper);
             // 🔥 添加关闭按钮到覆盖层
             overlay.appendChild(closeBtn);
@@ -5671,9 +5615,6 @@
 
             // 🔥 关键：先从覆盖层中取出panels（在移除覆盖层之前）
             if (panels && panels.parentNode) {
-              // 🔥 恢复panels的显示（移动端可能被隐藏了）
-              panels.style.display = '';
-
               // 找到panels的父容器（contentWrapper）
               const contentWrapper = panels.parentNode;
 
@@ -16673,50 +16614,6 @@
                 .mobile-device .center-panel {
                   min-height: 300px !important;
                 }
-              }
-              
-              /* 🔥 移动端全屏横向滑动布局 */
-              .game-viewport {
-                width: 300vw !important;
-                height: 100vh !important;
-                display: flex !important;
-                overflow-x: auto !important;
-                overflow-y: hidden !important;
-                scroll-snap-type: x mandatory !important;
-                -webkit-overflow-scrolling: touch !important;
-                scrollbar-width: thin !important;
-                scrollbar-color: rgba(139, 105, 20, 0.5) transparent !important;
-              }
-              
-              .game-viewport::-webkit-scrollbar {
-                height: 8px !important;
-              }
-              
-              .game-viewport::-webkit-scrollbar-track {
-                background: transparent !important;
-              }
-              
-              .game-viewport::-webkit-scrollbar-thumb {
-                background: rgba(139, 105, 20, 0.5) !important;
-                border-radius: 4px !important;
-              }
-              
-              .game-viewport::-webkit-scrollbar-thumb:hover {
-                background: rgba(139, 105, 20, 0.7) !important;
-              }
-              
-              .game-panel {
-                width: 100vw !important;
-                height: 100vh !important;
-                scroll-snap-align: start !important;
-                flex-shrink: 0 !important;
-                display: flex !important;
-                justify-content: center !important;
-                align-items: center !important;
-                overflow-y: auto !important;
-                overflow-x: hidden !important;
-                padding: 10px !important;
-                box-sizing: border-box !important;
               }
               
               /* 移动端弹窗优化 */
