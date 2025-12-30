@@ -1,4 +1,3 @@
-
 <!--
 ================================================================================
   特雷森规则怪谈 - 训练员生存指南
@@ -338,74 +337,6 @@
               $('#btn-send-action').on('click', async () => {
                 await this.handleActionSubmit();
               }),
-              // 移动端发送按钮
-              $('#btn-send-action-mobile').on('click', async () => {
-                // 同步移动端输入到原始输入框
-                const mobileInput = document.getElementById('action-input-mobile');
-                const originalInput = document.getElementById('action-input');
-                if (mobileInput && originalInput) {
-                  originalInput.value = mobileInput.value;
-                }
-                await this.handleActionSubmit();
-                // 清空移动端输入框
-                if (mobileInput) {
-                  mobileInput.value = '';
-                }
-              }),
-              // 移动端全屏按钮
-              $('#fullscreen-btn-mobile').on('click', () => {
-                this.toggleFullscreen();
-              }),
-              // 移动端其他按钮事件代理
-              $('#btn-summary-mobile').on('click', () => {
-                const originalBtn = document.getElementById('btn-summary');
-                if (originalBtn) originalBtn.click();
-              }),
-              $('#btn-back-mobile').on('click', () => {
-                const originalBtn = document.getElementById('btn-back');
-                if (originalBtn) originalBtn.click();
-              }),
-              $('#btn-reroll-mobile').on('click', () => {
-                const originalBtn = document.getElementById('btn-reroll');
-                if (originalBtn) originalBtn.click();
-              }),
-              // 移动端快捷按钮
-              $('#quickmap-btn-mobile').on('click', () => {
-                const originalBtn = document.getElementById('quickmap-btn');
-                if (originalBtn) originalBtn.click();
-              }),
-              $('#quick-action-btn-mobile').on('click', () => {
-                const originalBtn = document.getElementById('quick-action-btn');
-                if (originalBtn) originalBtn.click();
-              }),
-              $('#quick-position-btn-mobile').on('click', () => {
-                const originalBtn = document.getElementById('quick-position-btn');
-                if (originalBtn) originalBtn.click();
-              }),
-              // 移动端聊天历史切换
-              $('#chat-history-checkbox-mobile').on('change', function () {
-                const originalCheckbox = document.getElementById('chat-history-checkbox');
-                if (originalCheckbox) {
-                  originalCheckbox.checked = this.checked;
-                  originalCheckbox.dispatchEvent(new Event('change'));
-                }
-                const mobilePanel = document.getElementById('chat-history-panel-mobile');
-                if (mobilePanel) {
-                  mobilePanel.style.display = this.checked ? 'block' : 'none';
-                }
-              }),
-              // 移动端输入框回车发送（同步到原始输入框）
-              $('#action-input-mobile').on('keydown', function (e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  const originalInput = document.getElementById('action-input');
-                  if (originalInput) {
-                    originalInput.value = this.value;
-                    $('#btn-send-action').click();
-                    this.value = '';
-                  }
-                }
-              }),
               // 回车发送消息（根据设置动态启用/禁用）
               this.setupEnterToSend(),
               // 🔥 初始化快捷功能弹窗
@@ -690,13 +621,6 @@
 
             // 🔥 更新返回和重新生成按钮的状态
             await this.updateBackRerollButtonsState();
-
-            // 🔥 同步内容到移动端页面
-            if (window.mobileDetector && window.mobileDetector.isMobile) {
-              setTimeout(() => {
-                window.mobileDetector.syncContentToMobilePages();
-              }, 100);
-            }
 
             const e = Date.now();
 
@@ -5420,6 +5344,12 @@
               overlay.style.backgroundImage = 'none';
             }
 
+            // 🔥 检测是否为移动端（提前定义，供后续使用）
+            const isMobile =
+              window.mobileDetector?.isMobile ||
+              /mobile|android|iphone|ipad|ipod/i.test(navigator.userAgent) ||
+              window.innerWidth <= 768;
+
             // 🔥 初始化缩放按钮事件（使用右侧面板的按钮，不使用悬浮窗）
             const zoomOutBtn = document.getElementById('zoom-out-btn-inline');
             const zoomResetBtn = document.getElementById('zoom-reset-btn-inline');
@@ -5434,6 +5364,11 @@
 
             // 应用缩放的函数
             const applyZoom = scale => {
+              // 🔥 移动端不需要缩放功能（使用横向滑动）
+              if (isMobile) {
+                return;
+              }
+
               // 限制缩放范围
               scale = Math.max(minScale, Math.min(maxScale, scale));
               currentScale = scale;
@@ -5454,7 +5389,8 @@
             };
 
             // 绑定按钮事件（只在全屏时生效，使用右侧面板的按钮）
-            if (zoomOutBtn && zoomResetBtn && zoomInBtn) {
+            // 🔥 移动端不显示缩放按钮（使用横向滑动）
+            if (zoomOutBtn && zoomResetBtn && zoomInBtn && !isMobile) {
               // 绑定事件监听器
               zoomOutBtn.onclick = () => {
                 applyZoom(currentScale - stepScale);
@@ -5522,25 +5458,69 @@
 
             // 创建内容容器（限制尺寸，不直接扩展）
             const contentWrapper = document.createElement('div');
-            contentWrapper.style.cssText = `
-              width: 100%;
-              height: 100%;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              overflow: auto;
-              padding: 20px;
-              box-sizing: border-box;
-            `;
 
-            // 应用初始缩放（限制尺寸，不直接扩展）- 默认100%缩放已经在applyZoom中应用了
-            panels.style.position = 'relative';
-            panels.style.margin = 'auto';
-            panels.style.transformOrigin = 'center center';
-            panels.style.flexShrink = '0'; // 🔥 防止被压缩
+            if (isMobile) {
+              // 🔥 移动端：创建横向滑动容器（长画布布局）
+              // 不复制内容，直接使用原有panels，保持原有尺寸，不自动扩展
+              contentWrapper.className = 'game-viewport';
+              contentWrapper.style.cssText = `
+                width: 100%;
+                height: 100%;
+                display: flex;
+                justify-content: flex-start;
+                align-items: flex-start;
+                overflow-x: auto;
+                overflow-y: auto;
+                scroll-snap-type: none;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(139, 105, 20, 0.5) transparent;
+                padding: 20px;
+                box-sizing: border-box;
+              `;
+
+              // 🔥 保持panels原有尺寸，不强制扩展，不拉伸
+              // 恢复原始样式（如果有保存的话）
+              if (panels.dataset.originalStyle) {
+                const originalStyle = JSON.parse(panels.dataset.originalStyle);
+                panels.style.width = originalStyle.width || '';
+                panels.style.height = originalStyle.height || '';
+                panels.style.maxWidth = originalStyle.maxWidth || '';
+                panels.style.maxHeight = originalStyle.maxHeight || '';
+              }
+
+              panels.style.position = 'relative';
+              panels.style.margin = '0 auto';
+              panels.style.transformOrigin = 'center center';
+              panels.style.flexShrink = '0'; // 防止被压缩
+              panels.style.flexGrow = '0'; // 防止自动扩展
+              panels.style.alignSelf = 'flex-start'; // 顶部对齐，不拉伸
+
+              // 直接将panels放入滑动容器
+              contentWrapper.appendChild(panels);
+            } else {
+              // 电脑端：保持原有布局
+              contentWrapper.style.cssText = `
+                width: 100%;
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                overflow: auto;
+                padding: 20px;
+                box-sizing: border-box;
+              `;
+
+              // 应用初始缩放（限制尺寸，不直接扩展）- 默认100%缩放已经在applyZoom中应用了
+              panels.style.position = 'relative';
+              panels.style.margin = 'auto';
+              panels.style.transformOrigin = 'center center';
+              panels.style.flexShrink = '0'; // 🔥 防止被压缩
+
+              contentWrapper.appendChild(panels);
+            }
 
             // 组装覆盖层
-            contentWrapper.appendChild(panels);
             overlay.appendChild(contentWrapper);
             // 🔥 添加关闭按钮到覆盖层
             overlay.appendChild(closeBtn);
@@ -5691,6 +5671,9 @@
 
             // 🔥 关键：先从覆盖层中取出panels（在移除覆盖层之前）
             if (panels && panels.parentNode) {
+              // 🔥 恢复panels的显示（移动端可能被隐藏了）
+              panels.style.display = '';
+
               // 找到panels的父容器（contentWrapper）
               const contentWrapper = panels.parentNode;
 
@@ -16006,7 +15989,6 @@
             document.documentElement.classList.remove('desktop-device');
             this.applyMobileStyles();
             this.addMobileLayoutIndicator();
-            this.initMobilePageSystem();
           } else {
             console.log('💻 检测到桌面设备，使用默认样式');
             document.documentElement.classList.add('desktop-device');
@@ -16029,216 +16011,6 @@
               }
             }, 300); // 防抖处理
           });
-        }
-
-        initMobilePageSystem() {
-          // 显示全屏进入按钮
-          const entryBtn = document.getElementById('mobile-fullscreen-entry');
-          if (entryBtn) {
-            entryBtn.style.display = 'flex';
-          }
-
-          // 全屏进入按钮点击事件
-          const enterBtn = document.getElementById('mobile-enter-fullscreen-btn');
-          if (enterBtn) {
-            enterBtn.addEventListener('click', () => {
-              this.enterMobileFullscreen();
-            });
-          }
-
-          // 初始化页面切换
-          this.setupMobilePageNavigation();
-
-          // 初始化内容同步
-          this.syncContentToMobilePages();
-        }
-
-        enterMobileFullscreen() {
-          // 隐藏全屏进入按钮
-          const entryBtn = document.getElementById('mobile-fullscreen-entry');
-          if (entryBtn) {
-            entryBtn.style.display = 'none';
-          }
-
-          // 显示移动端页面容器
-          const pageContainer = document.getElementById('mobile-page-container');
-          if (pageContainer) {
-            pageContainer.style.display = 'flex';
-          }
-
-          // 添加全屏激活类
-          document.documentElement.classList.add('mobile-fullscreen-active');
-
-          // 同步内容到移动端页面
-          this.syncContentToMobilePages();
-
-          console.log('✅ 已进入移动端全屏模式');
-        }
-
-        setupMobilePageNavigation() {
-          // 底部导航栏切换
-          const navItems = document.querySelectorAll('.mobile-bottom-nav .nav-item');
-          navItems.forEach(item => {
-            item.addEventListener('click', e => {
-              const pageName = item.getAttribute('data-nav');
-              this.switchMobilePage(pageName);
-            });
-          });
-        }
-
-        switchMobilePage(pageName) {
-          // 隐藏所有页面
-          const pages = document.querySelectorAll('.mobile-page');
-          pages.forEach(page => {
-            page.classList.remove('active');
-          });
-
-          // 显示目标页面
-          const targetPage = document.querySelector(`.mobile-page[data-page="${pageName}"]`);
-          if (targetPage) {
-            targetPage.classList.add('active');
-          }
-
-          // 更新导航栏激活状态
-          const navItems = document.querySelectorAll('.mobile-bottom-nav .nav-item');
-          navItems.forEach(item => {
-            item.classList.remove('active');
-            if (item.getAttribute('data-nav') === pageName) {
-              item.classList.add('active');
-            }
-          });
-
-          // 同步内容（如果需要）
-          if (pageName === 'left' || pageName === 'right' || pageName === 'functions') {
-            this.syncContentToMobilePages();
-          }
-
-          console.log(`📱 切换到页面: ${pageName}`);
-        }
-
-        syncContentToMobilePages() {
-          try {
-            // 同步聊天内容
-            const originalStoryContent = document.getElementById('story-content');
-            const mobileStoryContent = document.getElementById('story-content-mobile');
-            if (originalStoryContent && mobileStoryContent) {
-              mobileStoryContent.innerHTML = originalStoryContent.innerHTML;
-            }
-
-            // 同步聊天历史
-            const originalChatHistory = document.getElementById('chat-history-content-list');
-            const mobileChatHistory = document.getElementById('chat-history-content-list-mobile');
-            if (originalChatHistory && mobileChatHistory) {
-              mobileChatHistory.innerHTML = originalChatHistory.innerHTML;
-            }
-
-            // 同步变量更新装饰
-            const originalVarUpdate = document.getElementById('variable-update-decoration');
-            const mobileVarUpdate = document.getElementById('variable-update-decoration-mobile');
-            if (originalVarUpdate && mobileVarUpdate) {
-              mobileVarUpdate.style.display = originalVarUpdate.style.display;
-              const originalText = document.getElementById('variable-update-text');
-              const mobileText = document.getElementById('variable-update-text-mobile');
-              if (originalText && mobileText) {
-                mobileText.textContent = originalText.textContent;
-              }
-            }
-
-            // 同步行动选项
-            const originalActionOptions = document.getElementById('action-options-container');
-            const mobileActionOptions = document.getElementById('action-options-container-mobile');
-            if (originalActionOptions && mobileActionOptions) {
-              mobileActionOptions.style.display = originalActionOptions.style.display;
-              const originalList = document.getElementById('action-options-list');
-              const mobileList = document.getElementById('action-options-list-mobile');
-              if (originalList && mobileList) {
-                mobileList.innerHTML = originalList.innerHTML;
-              }
-            }
-
-            // 同步左侧面板内容
-            const originalLeftPanel = document.querySelector('.left-panel .panel-content');
-            const mobileLeftPanel = document.getElementById('mobile-left-panel-content');
-            if (originalLeftPanel && mobileLeftPanel) {
-              mobileLeftPanel.innerHTML = originalLeftPanel.innerHTML;
-              // 重新绑定左侧面板的事件
-              this.rebindMobilePanelEvents('left');
-            }
-
-            // 同步右侧面板内容
-            const originalRightPanel = document.querySelector('.right-panel .panel-content');
-            const mobileRightPanel = document.getElementById('mobile-right-panel-content');
-            if (originalRightPanel && mobileRightPanel) {
-              mobileRightPanel.innerHTML = originalRightPanel.innerHTML;
-              // 重新绑定右侧面板的事件
-              this.rebindMobilePanelEvents('right');
-            }
-
-            // 同步功能页面内容（底部栏）
-            const originalBottomPanel = document.querySelector('.bottom-panel');
-            const mobileFunctionsContent = document.getElementById('mobile-functions-content');
-            if (originalBottomPanel && mobileFunctionsContent) {
-              mobileFunctionsContent.innerHTML = originalBottomPanel.innerHTML;
-              // 重新绑定功能按钮事件
-              this.rebindMobilePanelEvents('functions');
-            }
-
-            // 同步输入区域（仅同步值，不覆盖用户正在输入的内容）
-            const originalInput = document.getElementById('action-input');
-            const mobileInput = document.getElementById('action-input-mobile');
-            if (originalInput && mobileInput && document.activeElement !== mobileInput) {
-              // 如果移动端输入框没有焦点，才同步
-              if (document.activeElement !== mobileInput) {
-                mobileInput.value = originalInput.value;
-              }
-            }
-
-            // 同步时间显示
-            const originalTime = document.getElementById('current-time');
-            const mobileTime = document.getElementById('current-time-mobile');
-            if (originalTime && mobileTime) {
-              mobileTime.textContent = originalTime.textContent;
-            }
-
-            // 同步技能区域
-            const originalSkills = document.getElementById('skills-section');
-            const mobileSkills = document.getElementById('skills-section-mobile');
-            if (originalSkills && mobileSkills) {
-              mobileSkills.style.display = originalSkills.style.display;
-              mobileSkills.innerHTML = originalSkills.innerHTML;
-            }
-          } catch (error) {
-            console.error('同步移动端内容时出错:', error);
-          }
-        }
-
-        rebindMobilePanelEvents(panelType) {
-          // 重新绑定移动端面板的事件
-          // 这里可以根据需要重新绑定特定的事件
-          if (panelType === 'left') {
-            // 重新绑定左侧面板按钮事件
-            const viewRulesBtn = document.querySelector('#mobile-left-panel-content #view-rules-btn');
-            if (viewRulesBtn) {
-              viewRulesBtn.addEventListener('click', () => {
-                const originalBtn = document.getElementById('view-rules-btn');
-                if (originalBtn) originalBtn.click();
-              });
-            }
-          } else if (panelType === 'right') {
-            // 重新绑定右侧面板按钮事件
-          } else if (panelType === 'functions') {
-            // 重新绑定功能按钮事件
-            const functionButtons = document.querySelectorAll('#mobile-functions-content .bottom-button');
-            functionButtons.forEach(btn => {
-              const originalId = btn.id;
-              if (originalId) {
-                btn.addEventListener('click', () => {
-                  const originalBtn = document.getElementById(originalId);
-                  if (originalBtn) originalBtn.click();
-                });
-              }
-            });
-          }
         }
 
         addMobileLayoutIndicator() {
@@ -16291,259 +16063,8 @@
                 font-size: 26px;
               }
               
-              /* 移动端全屏进入按钮 */
-              .mobile-fullscreen-entry {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.8);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 99999;
-              }
-              
-              .mobile-enter-btn {
-                background: linear-gradient(135deg, rgba(139, 105, 20, 0.9), rgba(139, 69, 19, 0.9));
-                color: white;
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                border-radius: 12px;
-                padding: 20px 40px;
-                font-size: 18px;
-                font-weight: 600;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                transition: all 0.3s;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-              }
-              
-              .mobile-enter-btn:active {
-                transform: scale(0.95);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-              }
-              
-              /* 移动端页面容器 */
-              .mobile-page-container {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                width: 100%;
-                height: 100vh;
-                height: 100dvh; /* 动态视口高度，适配移动端浏览器 */
-                background: #f5f5f5;
-                z-index: 10000;
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-                box-sizing: border-box;
-              }
-              
-              /* iframe环境下的优化 */
-              body {
-                margin: 0;
-                padding: 0;
-                overflow: hidden;
-              }
-              
-              .mobile-device.mobile-fullscreen-active body {
-                overflow: hidden;
-              }
-              
-              /* 移动端页面 */
-              .mobile-page {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: calc(100% - 60px);
-                height: calc(100dvh - 60px); /* 动态视口高度 */
-                background: #fdfbf7;
-                display: none;
-                overflow: hidden; /* 改为hidden，让内部元素自己处理滚动 */
-                transition: transform 0.3s ease;
-                box-sizing: border-box;
-              }
-              
-              /* 聊天页面特殊处理 - 需要内部滚动 */
-              .mobile-page-chat {
-                overflow: hidden;
-              }
-              
-              .mobile-page-chat .mobile-page-content {
-                height: 100%;
-                overflow: hidden;
-                display: flex;
-                flex-direction: column;
-              }
-              
-              .mobile-page.active {
-                display: block;
-                z-index: 1;
-              }
-              
-              .mobile-page-content {
-                width: 100%;
-                height: 100%;
-                overflow-y: auto;
-                overflow-x: hidden;
-                -webkit-overflow-scrolling: touch;
-              }
-              
-              /* 移动端底部导航栏（微信风格） */
-              .mobile-bottom-nav {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                height: 60px;
-                min-height: 60px;
-                background: #ffffff;
-                border-top: 1px solid rgba(0, 0, 0, 0.1);
-                display: flex;
-                justify-content: space-around;
-                align-items: center;
-                z-index: 10001;
-                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-                padding-bottom: env(safe-area-inset-bottom);
-                padding-bottom: max(env(safe-area-inset-bottom), 0px);
-                box-sizing: border-box;
-              }
-              
-              .mobile-bottom-nav .nav-item {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 4px;
-                padding: 8px;
-                background: transparent;
-                border: none;
-                cursor: pointer;
-                color: #999;
-                transition: all 0.2s;
-                font-size: 12px;
-              }
-              
-              .mobile-bottom-nav .nav-item.active {
-                color: #07c160;
-              }
-              
-              .mobile-bottom-nav .nav-icon {
-                width: 24px;
-                height: 24px;
-                transition: transform 0.2s;
-              }
-              
-              .mobile-bottom-nav .nav-item.active .nav-icon {
-                transform: scale(1.1);
-              }
-              
-              .mobile-bottom-nav .nav-label {
-                font-size: 11px;
-                font-weight: 500;
-              }
-              
-              /* 移动端面板样式 */
-              .mobile-chat-panel,
-              .mobile-left-panel,
-              .mobile-right-panel,
-              .mobile-functions-panel,
-              .mobile-input-panel {
-                width: 100%;
-                height: 100%;
-                border: none;
-                border-radius: 0;
-                box-shadow: none;
-                background: #fdfbf7;
-                padding: 0;
-                margin: 0;
-              }
-              
-              .mobile-chat-panel .story-container {
-                padding: 12px;
-                padding-bottom: 0;
-                flex: 1;
-                overflow-y: auto;
-                overflow-x: hidden;
-                -webkit-overflow-scrolling: touch;
-                box-sizing: border-box;
-                display: flex;
-                flex-direction: column;
-              }
-              
-              /* 移动端输入区域样式（在聊天页面内） */
-              .mobile-input-section {
-                flex-shrink: 0;
-                padding: 12px;
-                padding-bottom: calc(12px + env(safe-area-inset-bottom));
-                border-top: 1px solid rgba(139, 105, 20, 0.2);
-                background: #fdfbf7;
-                box-sizing: border-box;
-              }
-              
-              .mobile-left-panel .panel-content,
-              .mobile-right-panel .panel-content,
-              .mobile-functions-panel .panel-content {
-                padding: 12px;
-                padding-bottom: calc(12px + env(safe-area-inset-bottom));
-                height: 100%;
-                overflow-y: auto;
-                overflow-x: hidden;
-                -webkit-overflow-scrolling: touch;
-                box-sizing: border-box;
-              }
-              
-              /* 移动端聊天面板布局 */
-              .mobile-chat-panel {
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-              }
-              
-              /* 移动端功能页面样式 */
-              .mobile-functions-panel .panel-content {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-              }
-              
-              .mobile-functions-panel .bottom-group {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 12px;
-                padding: 12px;
-                background: rgba(244, 241, 232, 0.3);
-                border-radius: 8px;
-                border: 1px solid rgba(139, 105, 20, 0.15);
-              }
-              
-              .mobile-functions-panel .bottom-button {
-                flex: 1;
-                min-width: calc(50% - 6px);
-                padding: 16px;
-                font-size: 16px;
-                border-radius: 8px;
-              }
-              
-              /* 移动端隐藏原始布局（仅在全屏模式下） */
-              .mobile-device.mobile-fullscreen-active .connected-panels {
-                display: none !important;
-              }
-              
-              /* 非全屏模式下显示原始布局 */
-              .mobile-device:not(.mobile-fullscreen-active) .connected-panels {
-                display: grid !important;
-              }
-              
-              /* 移动端三行布局 - 核心布局重构（保留用于非全屏模式） */
-              .mobile-device:not(.mobile-fullscreen-active) .connected-panels {
+              /* 移动端三行布局 - 核心布局重构 */
+              .mobile-device .connected-panels {
                 display: flex !important;
                 flex-direction: column !important;
                 grid-template-columns: none !important;
@@ -16558,15 +16079,6 @@
                 border-radius: 0 !important;
                 box-shadow: none !important;
                 box-sizing: border-box !important;
-              }
-              
-              /* 全屏模式激活时 */
-              .mobile-device.mobile-fullscreen-active .connected-panels {
-                display: none !important;
-              }
-              
-              .mobile-device.mobile-fullscreen-active .mobile-page-container {
-                display: flex !important;
               }
               
               /* 移动端面板顺序和样式 */
@@ -17161,6 +16673,50 @@
                 .mobile-device .center-panel {
                   min-height: 300px !important;
                 }
+              }
+              
+              /* 🔥 移动端全屏横向滑动布局 */
+              .game-viewport {
+                width: 300vw !important;
+                height: 100vh !important;
+                display: flex !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                scroll-snap-type: x mandatory !important;
+                -webkit-overflow-scrolling: touch !important;
+                scrollbar-width: thin !important;
+                scrollbar-color: rgba(139, 105, 20, 0.5) transparent !important;
+              }
+              
+              .game-viewport::-webkit-scrollbar {
+                height: 8px !important;
+              }
+              
+              .game-viewport::-webkit-scrollbar-track {
+                background: transparent !important;
+              }
+              
+              .game-viewport::-webkit-scrollbar-thumb {
+                background: rgba(139, 105, 20, 0.5) !important;
+                border-radius: 4px !important;
+              }
+              
+              .game-viewport::-webkit-scrollbar-thumb:hover {
+                background: rgba(139, 105, 20, 0.7) !important;
+              }
+              
+              .game-panel {
+                width: 100vw !important;
+                height: 100vh !important;
+                scroll-snap-align: start !important;
+                flex-shrink: 0 !important;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                padding: 10px !important;
+                box-sizing: border-box !important;
               }
               
               /* 移动端弹窗优化 */
@@ -23194,381 +22750,6 @@
   </head>
 
   <body>
-    <!-- 移动端全屏进入按钮 -->
-    <div id="mobile-fullscreen-entry" class="mobile-fullscreen-entry" style="display: none">
-      <button id="mobile-enter-fullscreen-btn" class="mobile-enter-btn">
-        <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z"
-          />
-        </svg>
-        <span>全屏进入</span>
-      </button>
-    </div>
-
-    <!-- 移动端页面容器 -->
-    <div id="mobile-page-container" class="mobile-page-container" style="display: none">
-      <!-- 页面1: 聊天区域（主体） -->
-      <div class="mobile-page mobile-page-chat active" data-page="chat">
-        <div class="mobile-page-content">
-          <div class="parchment-page center-panel mobile-chat-panel">
-            <div class="story-container">
-              <!-- 故事文本操作按钮栏 -->
-              <div
-                class="story-actions-bar"
-                id="story-actions-bar-mobile"
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  gap: 6px;
-                  padding: 8px 12px;
-                  margin-bottom: 8px;
-                  background: rgba(244, 241, 232, 0.3);
-                  border-radius: 6px;
-                  border: 1px solid rgba(139, 105, 20, 0.15);
-                "
-              >
-                <div style="display: flex; align-items: center; gap: 6px">
-                  <button
-                    id="fullscreen-btn-mobile"
-                    class="story-action-btn"
-                    title="全屏"
-                    style="
-                      width: 32px;
-                      height: 32px;
-                      padding: 0;
-                      border: 1px solid rgba(139, 105, 20, 0.3);
-                      border-radius: 4px;
-                      background: rgba(139, 105, 20, 0.1);
-                      color: #8b4513;
-                      cursor: pointer;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      transition: all 0.2s;
-                    "
-                  >
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z"
-                      />
-                    </svg>
-                  </button>
-                  <label
-                    class="chat-history-toggle"
-                    style="
-                      display: flex;
-                      align-items: center;
-                      gap: 6px;
-                      padding: 6px 12px;
-                      border: 1px solid rgba(139, 105, 20, 0.3);
-                      border-radius: 4px;
-                      background: rgba(139, 105, 20, 0.1);
-                      color: #8b4513;
-                      cursor: pointer;
-                      transition: all 0.2s;
-                      font-size: 12px;
-                      font-weight: 500;
-                    "
-                  >
-                    <input
-                      type="checkbox"
-                      id="chat-history-checkbox-mobile"
-                      style="width: 16px; height: 16px; cursor: pointer; accent-color: #8b4513"
-                    />
-                    <span class="toggle-label" style="user-select: none">聊天</span>
-                  </label>
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px">
-                  <button
-                    id="btn-summary-mobile"
-                    class="story-action-btn"
-                    title="总结"
-                    style="
-                      width: 32px;
-                      height: 32px;
-                      padding: 0;
-                      border: 1px solid rgba(139, 105, 20, 0.3);
-                      border-radius: 4px;
-                      background: rgba(139, 105, 20, 0.1);
-                      color: #8b4513;
-                      cursor: pointer;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      transition: all 0.2s;
-                    "
-                  >
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
-                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    id="btn-back-mobile"
-                    class="story-action-btn"
-                    title="返回"
-                    style="
-                      width: 32px;
-                      height: 32px;
-                      padding: 0;
-                      border: 1px solid rgba(139, 105, 20, 0.3);
-                      border-radius: 4px;
-                      background: rgba(139, 105, 20, 0.1);
-                      color: #8b4513;
-                      cursor: pointer;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      transition: all 0.2s;
-                    "
-                  >
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
-                        d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    id="btn-reroll-mobile"
-                    class="story-action-btn"
-                    title="重新生成"
-                    style="
-                      width: 32px;
-                      height: 32px;
-                      padding: 0;
-                      border: 1px solid rgba(139, 105, 20, 0.3);
-                      border-radius: 4px;
-                      background: rgba(139, 105, 20, 0.1);
-                      color: #8b4513;
-                      cursor: pointer;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      transition: all 0.2s;
-                    "
-                  >
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
-                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div class="story-content" id="story-content-mobile" style="margin-bottom: 0; position: relative">
-                <p class="story-text">等待故事内容加载...</p>
-              </div>
-              <div
-                id="chat-history-panel-mobile"
-                style="
-                  display: none;
-                  margin-top: 20px;
-                  border-top: 2px solid rgba(139, 105, 20, 0.3);
-                  padding-top: 15px;
-                  max-height: 400px;
-                  overflow-y: auto;
-                  background: rgba(255, 255, 255, 0.5);
-                  border-radius: 4px;
-                  padding: 15px;
-                "
-              >
-                <div
-                  style="
-                    font-size: 14px;
-                    font-weight: bold;
-                    color: #8b4513;
-                    margin-bottom: 10px;
-                    padding-bottom: 8px;
-                    border-bottom: 1px solid rgba(139, 105, 20, 0.2);
-                  "
-                >
-                  聊天历史
-                </div>
-                <div id="chat-history-content-list-mobile" style="color: #654321; line-height: 1.8; font-size: 13px">
-                  加载中...
-                </div>
-              </div>
-              <div
-                id="variable-update-decoration-mobile"
-                class="variable-update-decoration"
-                style="
-                  margin-top: 15px;
-                  margin-bottom: 15px;
-                  padding: 8px 12px;
-                  background:
-                    linear-gradient(135deg, rgba(139, 105, 20, 0.1), rgba(139, 105, 20, 0.15)),
-                    repeating-linear-gradient(
-                      45deg,
-                      transparent,
-                      transparent 8px,
-                      rgba(139, 105, 20, 0.02) 8px,
-                      rgba(139, 105, 20, 0.02) 16px
-                    );
-                  border-left: 3px solid rgba(139, 105, 20, 0.5);
-                  border-radius: 4px;
-                  display: none;
-                  position: static;
-                  animation: fadeIn 0.3s ease-in;
-                  box-shadow: 0 1px 3px rgba(139, 105, 20, 0.1);
-                "
-              >
-                <div
-                  style="
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    color: #8b4513;
-                    font-size: 0.85em;
-                    font-weight: 500;
-                    font-style: italic;
-                  "
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    style="flex-shrink: 0; opacity: 0.7"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                  <span
-                    id="variable-update-text-mobile"
-                    class="variable-update-text"
-                    style="flex: 1; line-height: 1.4"
-                  ></span>
-                </div>
-              </div>
-              <div
-                class="action-options-container"
-                id="action-options-container-mobile"
-                style="
-                  margin-top: 20px;
-                  padding: 15px;
-                  background:
-                    linear-gradient(135deg, rgba(244, 241, 232, 0.6) 0%, rgba(232, 224, 208, 0.6) 100%),
-                    repeating-linear-gradient(
-                      45deg,
-                      transparent,
-                      transparent 10px,
-                      rgba(139, 105, 20, 0.03) 10px,
-                      rgba(139, 105, 20, 0.03) 20px
-                    );
-                  border: 1px solid rgba(139, 105, 20, 0.2);
-                  border-radius: 8px;
-                  box-shadow:
-                    inset 0 2px 4px rgba(139, 105, 20, 0.1),
-                    0 1px 2px rgba(139, 105, 20, 0.1);
-                  display: none;
-                "
-              >
-                <div
-                  style="
-                    font-weight: 600;
-                    color: #8b4513;
-                    font-size: 0.9em;
-                    margin-bottom: 12px;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                  "
-                >
-                  <span style="font-size: 1.2em">🎯</span>
-                  <span>行动选项</span>
-                </div>
-                <div id="action-options-list-mobile" style="display: flex; flex-direction: column; gap: 10px"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 页面2: 左侧面板（训练员信息） -->
-      <div class="mobile-page mobile-page-left" data-page="left">
-        <div class="mobile-page-content">
-          <div class="parchment-page left-panel mobile-left-panel">
-            <div class="panel-content" id="mobile-left-panel-content">
-              <!-- 左侧面板内容将动态复制 -->
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 页面3: 右侧面板（马娘状态等） -->
-      <div class="mobile-page mobile-page-right" data-page="right">
-        <div class="mobile-page-content">
-          <div class="parchment-page right-panel mobile-right-panel">
-            <div class="panel-content" id="mobile-right-panel-content">
-              <!-- 右侧面板内容将动态复制 -->
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 页面4: 功能页面（底部栏功能） -->
-      <div class="mobile-page mobile-page-functions" data-page="functions">
-        <div class="mobile-page-content">
-          <div class="parchment-page mobile-functions-panel">
-            <div class="panel-content" id="mobile-functions-content">
-              <!-- 功能内容将动态复制 -->
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 底部导航栏（微信风格） -->
-      <div class="mobile-bottom-nav">
-        <button class="nav-item active" data-nav="chat" title="聊天">
-          <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
-            <path
-              d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"
-            />
-          </svg>
-          <span class="nav-label">聊天</span>
-        </button>
-        <button class="nav-item" data-nav="left" title="训练员">
-          <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
-          </svg>
-          <span class="nav-label">训练员</span>
-        </button>
-        <button class="nav-item" data-nav="right" title="马娘">
-          <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fill-rule="evenodd"
-              d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          <span class="nav-label">马娘</span>
-        </button>
-        <button class="nav-item" data-nav="functions" title="功能">
-          <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fill-rule="evenodd"
-              d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          <span class="nav-label">功能</span>
-        </button>
-      </div>
-    </div>
-
     <div class="connected-panels">
       <!-- 左侧面板：训练员信息 -->
 
@@ -34864,4 +34045,3 @@
   - 只能在类脑、旅程二传
 ================================================================================
 -->
-
